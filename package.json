@@ -1,0 +1,27 @@
+{
+  "name": "sololedger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Front-end assets for SoloLedger (SCSS and JS compiled into core/static/dist)",
+  "scripts": {
+    "build:css": "sass --load-path=node_modules --quiet-deps --silence-deprecation=import --style=compressed --no-source-map core/assets/scss/app.scss core/static/dist/css/app.css",
+    "build:js": "esbuild core/assets/js/app.js --bundle --minify --format=iife --target=es2020 --outfile=core/static/dist/js/app.js",
+    "build": "npm run build:css && npm run build:js",
+    "watch:css": "npm run build:css -- --watch",
+    "watch:js": "npm run build:js -- --watch",
+    "watch": "npm run watch:css & npm run watch:js",
+    "format": "prettier --write \"core/assets/**/*.{scss,js}\"",
+    "format:check": "prettier --check \"core/assets/**/*.{scss,js}\""
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.8",
+    "alpinejs": "^3.17.5",
+    "bootstrap": "5.3.8",
+    "htmx.org": "^2.0.11"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "sass": "^1.106.1"
+  }
+}

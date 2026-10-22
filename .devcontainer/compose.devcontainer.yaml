@@ -1,0 +1,5 @@
+# Keeps the container alive independently of Django: an import error in the
+# settings must not kill the Dev Container. Start the server with `make run`.
+services:
+  web:
+    command: sleep infinity

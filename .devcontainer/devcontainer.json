@@ -1,0 +1,44 @@
+{
+  "name": "SoloLedger",
+  "dockerComposeFile": ["../compose.yaml", "../compose.dev.yaml", "compose.devcontainer.yaml"],
+  "service": "web",
+  "workspaceFolder": "/app",
+  "shutdownAction": "none",
+  "initializeCommand": "sh -c '[ -f .env ] || cp .env.example .env'",
+  "postCreateCommand": "make npm assets migrate",
+  "forwardPorts": [8000],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "ruff.importStrategy": "fromEnvironment",
+        "mypy-type-checker.importStrategy": "fromEnvironment",
+        "files.associations": {
+          "**/templates/**/*.html": "django-html"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        },
+        "[django-html]": {
+          "editor.defaultFormatter": "monosans.djlint"
+        },
+        "[scss]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "monosans.djlint",
+        "esbenp.prettier-vscode",
+        "batisteo.vscode-django"
+      ]
+    }
+  }
+}
