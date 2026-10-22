@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+
+# Django
+staticfiles/
+core/static/dist/*
+!core/static/dist/.gitkeep
+*.sqlite3
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Reference bank exports: never versioned, even anonymized ones
+docs/references/*.csv
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.*
+docs/
+node_modules/
+.venv/
+core/static/dist/
+staticfiles/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.devcontainer/
+*.code-workspace
+.DS_Store
