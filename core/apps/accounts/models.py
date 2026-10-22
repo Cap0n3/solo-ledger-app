@@ -4,24 +4,24 @@ from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
-    """Application account. Each user owns one or more activities."""
+    """Application account. Each user owns one or more professions."""
 
     class Meta:
         verbose_name = _("utilisateur")
         verbose_name_plural = _("utilisateurs")
 
 
-class Activity(models.Model):
-    """An independent teaching activity (e.g. guitar lessons) owned by one user.
+class Profession(models.Model):
+    """An independent activity (e.g. guitar lessons) owned by one user.
 
-    Every business record belongs to exactly one activity: this is how data is
-    kept separate between users.
+    Shown as « activité » in the UI. Every business record belongs to exactly
+    one profession: this is how data is kept separate between users.
     """
 
     user = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
-        related_name="activities",
+        related_name="professions",
         verbose_name=_("utilisateur"),
     )
     name = models.CharField(_("nom"), max_length=100)
@@ -34,7 +34,7 @@ class Activity(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=("user", "name"),
-                name="unique_activity_name_per_user",
+                name="unique_profession_name_per_user",
                 violation_error_message=_("Une activité porte déjà ce nom."),
             ),
         )
@@ -43,15 +43,15 @@ class Activity(models.Model):
         return self.name
 
 
-class ActivityOwnedModel(models.Model):
-    """Base class for every business record: ties it to one activity.
+class ProfessionOwnedModel(models.Model):
+    """Base class for every business record: ties it to one profession.
 
-    Selectors and services must always filter through `activity`; views must
+    Selectors and services must always filter through `profession`; views must
     never fetch such a record by id alone.
     """
 
-    activity = models.ForeignKey(
-        Activity,
+    profession = models.ForeignKey(
+        Profession,
         on_delete=models.PROTECT,
         related_name="%(class)s_set",
         verbose_name=_("activité"),

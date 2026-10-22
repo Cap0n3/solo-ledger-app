@@ -1,4 +1,4 @@
-from .models import Activity, User
+from .models import Profession, User
 
 
 def user_create(
@@ -18,8 +18,8 @@ def user_create(
     )
 
 
-def activity_create(*, user: User, name: str) -> Activity:
-    activity = Activity(user=user, name=name)
-    activity.full_clean()
-    activity.save()
-    return activity
+def profession_create(*, user: User, name: str) -> Profession:
+    profession = Profession(user=user, name=name)
+    profession.full_clean()
+    profession.save()
+    return profession

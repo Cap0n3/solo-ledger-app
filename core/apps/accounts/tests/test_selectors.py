@@ -1,45 +1,45 @@
 import pytest
 
-from core.apps.accounts.selectors import activity_current, activity_list
+from core.apps.accounts.selectors import profession_current, profession_list
 
-from .factories import ActivityFactory, UserFactory
+from .factories import ProfessionFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
 
-def test_activity_current_returns_selected_activity_when_owned():
+def test_profession_current_returns_selected_profession_when_owned():
     user = UserFactory.create()
-    ActivityFactory.create(user=user, name="Alpha")
-    selected = ActivityFactory.create(user=user, name="Beta")
+    ProfessionFactory.create(user=user, name="Alpha")
+    selected = ProfessionFactory.create(user=user, name="Beta")
 
-    assert activity_current(user=user, selected_activity_id=selected.pk) == selected
+    assert profession_current(user=user, selected_profession_id=selected.pk) == selected
 
 
-def test_activity_current_ignores_activity_owned_by_another_user():
+def test_profession_current_ignores_profession_owned_by_another_user():
     user = UserFactory.create()
-    own = ActivityFactory.create(user=user)
-    foreign = ActivityFactory.create()
+    own = ProfessionFactory.create(user=user)
+    foreign = ProfessionFactory.create()
 
-    assert activity_current(user=user, selected_activity_id=foreign.pk) == own
+    assert profession_current(user=user, selected_profession_id=foreign.pk) == own
 
 
-def test_activity_current_falls_back_to_oldest_activity():
+def test_profession_current_falls_back_to_oldest_profession():
     user = UserFactory.create()
-    oldest = ActivityFactory.create(user=user, name="Zèbre")
-    ActivityFactory.create(user=user, name="Alpha")
+    oldest = ProfessionFactory.create(user=user, name="Zèbre")
+    ProfessionFactory.create(user=user, name="Alpha")
 
-    assert activity_current(user=user, selected_activity_id=None) == oldest
+    assert profession_current(user=user, selected_profession_id=None) == oldest
 
 
-def test_activity_current_returns_none_without_activity():
+def test_profession_current_returns_none_without_profession():
     user = UserFactory.create()
 
-    assert activity_current(user=user, selected_activity_id=None) is None
+    assert profession_current(user=user, selected_profession_id=None) is None
 
 
-def test_activity_list_only_returns_own_activities():
+def test_profession_list_only_returns_own_professions():
     user = UserFactory.create()
-    own = ActivityFactory.create(user=user)
-    ActivityFactory.create()
+    own = ProfessionFactory.create(user=user)
+    ProfessionFactory.create()
 
-    assert list(activity_list(user=user)) == [own]
+    assert list(profession_list(user=user)) == [own]

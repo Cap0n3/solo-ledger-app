@@ -2,7 +2,7 @@
 
 ## Project
 
-SoloLedger is a Django web app for managing the accounting and students of independent music teaching activities (guitar lessons, singing lessons). Each user owns one or more activities and only ever sees their own data.
+SoloLedger is a Django web app for managing the accounting and students of independent music teaching activities (guitar lessons, singing lessons). Each user owns one or more activities (`Profession` in code) and only ever sees their own data.
 
 `SPECS.md` is the source of truth for features and business rules. Read it before planning any feature. If the spec is ambiguous or contradicts itself, ask before implementing. Do not guess business rules.
 
@@ -56,7 +56,7 @@ Run `make lint` and `make test` before considering a task done.
 core/                  # Python package: settings module is core.config.settings.*
 ├── config/            # settings (base, development, production, test), urls, wsgi/asgi
 ├── apps/              # one Django app per business domain
-│   ├── accounts/      # User, Activity, data-separation helpers, seed command
+│   ├── accounts/      # User, Profession, data-separation helpers, seed command
 │   ├── students/
 │   ├── accounting/
 │   ├── bank_imports/
@@ -80,7 +80,7 @@ We follow the HackSoft Django Styleguide, applied pragmatically:
 - **Views**: thin. Parse input, call a service or selector, render. No business logic in views or templates.
 - **Forms**: validation of user input only.
 
-Use keyword-only arguments for services and selectors (`def student_create(*, activity: Activity, name: str) -> Student`).
+Use keyword-only arguments for services and selectors (`def student_create(*, profession: Profession, name: str) -> Student`).
 
 ### Bank CSV parsing
 
@@ -88,12 +88,12 @@ The bank export format can change without notice. All parsing lives behind a sin
 
 ## Data separation (critical)
 
-- Every business record belongs to an `Activity`, and every `Activity` belongs to a `User`.
-  Business models inherit from `accounts.models.ActivityOwnedModel`.
-- Views take the current activity from `request.activity`, set by the `activity_required`
-  decorator (`accounts/decorators.py`); annotate such views with `ActivityHttpRequest`.
-  The current activity is resolved by the `activity_current` selector (session, then oldest).
-- Every selector and service takes the user or activity explicitly and filters by it. Never query business models without ownership filtering.
+- Every business record belongs to a `Profession` (« activité » in the UI), and every
+  `Profession` belongs to a `User`. Business models inherit from `accounts.models.ProfessionOwnedModel`.
+- Views take the current profession from `request.profession`, set by the `profession_required`
+  decorator (`accounts/decorators.py`); annotate such views with `ProfessionHttpRequest`.
+  The current profession is resolved by the `profession_current` selector (session, then oldest).
+- Every selector and service takes the user or profession explicitly and filters by it. Never query business models without ownership filtering.
 - Views must never fetch objects by ID alone. Use `get_object_or_404` with an ownership filter, through a selector.
 - Every feature needs a test proving that one user cannot read or modify another user's data.
 
@@ -109,7 +109,7 @@ Always use these names. Do not invent synonyms.
 
 | French (UI)                  | Code                   |
 |------------------------------|------------------------|
-| activité                     | `Activity`             |
+| activité                     | `Profession` (never `Activity`, which reads like an action log) |
 | élève                        | `Student`              |
 | payeur                       | `Payer`                |
 | nom de référence paiements   | `payment_reference_name` |
@@ -134,7 +134,7 @@ Always use these names. Do not invent synonyms.
 | compte d'exploitation        | `IncomeStatement`      |
 | numéro d'indépendant         | `self_employed_number` |
 | tableau de bord              | `dashboard`            |
-| activité courante            | `current activity` (`activity_current` selector) |
+| activité courante            | `current profession` (`profession_current` selector) |
 
 When a new domain concept appears, add it to this table before using it.
 

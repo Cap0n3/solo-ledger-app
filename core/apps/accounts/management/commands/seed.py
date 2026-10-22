@@ -6,8 +6,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from core.apps.accounts.models import User
-from core.apps.accounts.selectors import activity_list
-from core.apps.accounts.services import activity_create, user_create
+from core.apps.accounts.selectors import profession_list
+from core.apps.accounts.services import profession_create, user_create
 
 SEED_PASSWORD = "sololedger"
 SEED_ADMIN_USERNAME = "test_admin"
@@ -17,26 +17,26 @@ SEED_ADMIN_USERNAME = "test_admin"
 class SeedAccount:
     username: str
     first_name: str
-    activity_name: str
+    profession_name: str
 
 
 SEED_ACCOUNTS = (
     SeedAccount(
         username="test_guitar",
         first_name="[TEST] Guitare",
-        activity_name="Cours de guitare",
+        profession_name="Cours de guitare",
     ),
     SeedAccount(
         username="test_singing",
         first_name="[TEST] Chant",
-        activity_name="Cours de chant",
+        profession_name="Cours de chant",
     ),
 )
 
 
 class Command(BaseCommand):
     help = (
-        "Create fake development data: two teacher accounts with one activity "
+        "Create fake development data: two teacher accounts with one profession "
         "each, plus a technical admin account. Safe to run several times. "
         "Refused unless settings.SEED_ALLOWED is true."
     )
@@ -48,7 +48,7 @@ class Command(BaseCommand):
             )
         for account in SEED_ACCOUNTS:
             user = self._user_get_or_create(account)
-            self._activity_get_or_create(user=user, name=account.activity_name)
+            self._profession_get_or_create(user=user, name=account.profession_name)
         self._admin_get_or_create()
         self.stdout.write(
             self.style.SUCCESS(
@@ -70,12 +70,12 @@ class Command(BaseCommand):
         self.stdout.write(f"Created user {account.username}")
         return user
 
-    def _activity_get_or_create(self, *, user: User, name: str) -> None:
-        if activity_list(user=user).filter(name=name).exists():
-            self.stdout.write(f"Activity '{name}' already exists for {user.username}")
+    def _profession_get_or_create(self, *, user: User, name: str) -> None:
+        if profession_list(user=user).filter(name=name).exists():
+            self.stdout.write(f"Profession '{name}' already exists for {user.username}")
             return
-        activity_create(user=user, name=name)
-        self.stdout.write(f"Created activity '{name}' for {user.username}")
+        profession_create(user=user, name=name)
+        self.stdout.write(f"Created profession '{name}' for {user.username}")
 
     def _admin_get_or_create(self) -> None:
         if User.objects.filter(username=SEED_ADMIN_USERNAME).exists():

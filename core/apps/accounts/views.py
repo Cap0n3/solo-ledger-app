@@ -4,9 +4,9 @@ from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
-from .decorators import activity_required
+from .decorators import profession_required
 from .forms import LoginForm, PasswordChangeForm
-from .types import ActivityHttpRequest
+from .types import ProfessionHttpRequest
 
 
 class LoginView(auth_views.LoginView):
@@ -35,8 +35,8 @@ class PasswordChangeDoneView(auth_views.PasswordChangeDoneView):
         return context
 
 
-@activity_required
-def settings_view(request: ActivityHttpRequest) -> HttpResponse:
+@profession_required
+def settings_view(request: ProfessionHttpRequest) -> HttpResponse:
     """Account settings. Business settings arrive in later milestones."""
     context = {
         "page_title": _("Paramètres"),

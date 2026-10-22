@@ -7,7 +7,7 @@
       <div class="fw-semibold">
         {% blocktranslate with name=user.first_name|default:user.username %}Compte de {{ name }}{% endblocktranslate %}
       </div>
-      <div class="small text-secondary">{% translate "Activité :" %} {{ current_activity|default:"—" }}</div>
+      <div class="small text-secondary">{% translate "Activité :" %} {{ current_profession|default:"—" }}</div>
     </div>
     <div class="app-sidebar__section">{% translate "Espace de travail" %}</div>
     <nav class="nav flex-column app-sidebar__nav">

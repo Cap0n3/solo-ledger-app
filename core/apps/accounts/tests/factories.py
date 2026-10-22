@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from core.apps.accounts.models import Activity, User
+from core.apps.accounts.models import Profession, User
 
 
 class UserFactory(DjangoModelFactory[User]):
@@ -15,9 +15,9 @@ class UserFactory(DjangoModelFactory[User]):
     password = factory.django.Password("password")
 
 
-class ActivityFactory(DjangoModelFactory[Activity]):
+class ProfessionFactory(DjangoModelFactory[Profession]):
     class Meta:
-        model = Activity
+        model = Profession
 
     user = factory.SubFactory(UserFactory)
-    name = factory.Sequence(lambda n: f"Activity {n}")
+    name = factory.Sequence(lambda n: f"Profession {n}")

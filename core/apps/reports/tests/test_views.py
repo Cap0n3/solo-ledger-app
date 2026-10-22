@@ -1,7 +1,7 @@
 import pytest
 from django.urls import reverse
 
-from core.apps.accounts.tests.factories import ActivityFactory
+from core.apps.accounts.tests.factories import ProfessionFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -21,9 +21,9 @@ def test_pages_redirect_anonymous_user_to_login(client, url_name):
 
 
 @pytest.mark.parametrize("url_name", URL_NAMES)
-def test_pages_render_with_the_users_own_activity(client, url_name):
-    activity = ActivityFactory.create(name="Cours de guitare")
-    client.force_login(activity.user)
+def test_pages_render_with_the_users_own_profession(client, url_name):
+    profession = ProfessionFactory.create(name="Cours de guitare")
+    client.force_login(profession.user)
 
     response = client.get(reverse(url_name))
 

@@ -1,9 +1,9 @@
 import pytest
 from django.urls import reverse
 
-from core.apps.accounts.types import CURRENT_ACTIVITY_SESSION_KEY
+from core.apps.accounts.types import CURRENT_PROFESSION_SESSION_KEY
 
-from .factories import ActivityFactory, UserFactory
+from .factories import ProfessionFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -15,24 +15,24 @@ def test_dashboard_redirects_anonymous_user_to_login(client):
     assert response.url.startswith(reverse("accounts:login"))
 
 
-def test_dashboard_never_shows_another_users_activity(client):
-    own = ActivityFactory.create(name="Cours de guitare")
-    foreign = ActivityFactory.create(name="Cours de chant")
+def test_dashboard_never_shows_another_users_profession(client):
+    own = ProfessionFactory.create(name="Cours de guitare")
+    foreign = ProfessionFactory.create(name="Cours de chant")
     client.force_login(own.user)
     session = client.session
-    session[CURRENT_ACTIVITY_SESSION_KEY] = foreign.pk
+    session[CURRENT_PROFESSION_SESSION_KEY] = foreign.pk
     session.save()
 
     response = client.get(reverse("reports:dashboard"))
 
     assert response.status_code == 200
-    assert response.context["current_activity"] == own
+    assert response.context["current_profession"] == own
     content = response.content.decode()
     assert "Cours de guitare" in content
     assert "Cours de chant" not in content
 
 
-def test_dashboard_returns_403_for_user_without_activity(client):
+def test_dashboard_returns_403_for_user_without_profession(client):
     client.force_login(UserFactory.create())
 
     response = client.get(reverse("reports:dashboard"))
@@ -47,13 +47,13 @@ def test_login_page_is_public(client):
 
 
 def test_login_redirects_to_dashboard(client):
-    activity = ActivityFactory.create()
-    activity.user.set_password("secret-pass-123")
-    activity.user.save()
+    profession = ProfessionFactory.create()
+    profession.user.set_password("secret-pass-123")
+    profession.user.save()
 
     response = client.post(
         reverse("accounts:login"),
-        {"username": activity.user.username, "password": "secret-pass-123"},
+        {"username": profession.user.username, "password": "secret-pass-123"},
     )
 
     assert response.status_code == 302
@@ -61,7 +61,7 @@ def test_login_redirects_to_dashboard(client):
 
 
 def test_logout_requires_post(client):
-    client.force_login(ActivityFactory.create().user)
+    client.force_login(ProfessionFactory.create().user)
 
     assert client.get(reverse("accounts:logout")).status_code == 405
 
@@ -72,8 +72,8 @@ def test_logout_requires_post(client):
 
 
 def test_password_change_updates_password(client):
-    activity = ActivityFactory.create()
-    user = activity.user
+    profession = ProfessionFactory.create()
+    user = profession.user
     user.set_password("old-password-123")
     user.save()
     client.force_login(user)
@@ -92,9 +92,9 @@ def test_password_change_updates_password(client):
     assert user.check_password("new-password-456")
 
 
-def test_password_change_page_still_shows_current_activity(client):
-    activity = ActivityFactory.create(name="Cours de guitare")
-    client.force_login(activity.user)
+def test_password_change_page_still_shows_current_profession(client):
+    profession = ProfessionFactory.create(name="Cours de guitare")
+    client.force_login(profession.user)
 
     response = client.get(reverse("accounts:password_change"))
 
@@ -102,9 +102,9 @@ def test_password_change_page_still_shows_current_activity(client):
     assert "Cours de guitare" in response.content.decode()
 
 
-def test_settings_page_shows_current_activity(client):
-    activity = ActivityFactory.create(name="Cours de guitare")
-    client.force_login(activity.user)
+def test_settings_page_shows_current_profession(client):
+    profession = ProfessionFactory.create(name="Cours de guitare")
+    client.force_login(profession.user)
 
     response = client.get(reverse("accounts:settings"))
 

@@ -53,7 +53,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "core.apps.accounts.context_processors.current_activity",
+                "core.apps.accounts.context_processors.current_profession",
             ],
         },
     },

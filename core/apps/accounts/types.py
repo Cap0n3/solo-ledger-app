@@ -6,14 +6,14 @@ These classes exist only for typing: Django always passes a plain
 
 from django.http import HttpRequest
 
-from .models import Activity, User
+from .models import Profession, User
 
-CURRENT_ACTIVITY_SESSION_KEY = "current_activity_id"
+CURRENT_PROFESSION_SESSION_KEY = "current_profession_id"
 
 
 class AuthenticatedHttpRequest(HttpRequest):
     user: User
 
 
-class ActivityHttpRequest(AuthenticatedHttpRequest):
-    activity: Activity
+class ProfessionHttpRequest(AuthenticatedHttpRequest):
+    profession: Profession
