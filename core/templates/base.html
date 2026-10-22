@@ -7,16 +7,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ page_title }}{% endblock title %} · SoloLedger</title>
     <link rel="stylesheet" href="{% static 'dist/css/app.css' %}">
+    <script>
+      // Restore a collapsed sidebar before the first paint so it does not flash on page load.
+      // The preference is written by the "appLayout" Alpine component in assets/js/app.js.
+      try {
+        if (localStorage.getItem("sololedger.sidebarCollapsed") === "true") {
+          document.documentElement.classList.add("app-sidebar-collapsed");
+        }
+      } catch (error) {
+        // Storage can be unavailable (e.g. private browsing): keep the sidebar expanded.
+      }
+    </script>
   </head>
-  <body>
+  <body x-data="appLayout"
+        :class="{ 'app-sidebar-open': isDrawerOpen }"
+        @keydown.escape.window="closeSidebar()">
     {% block body %}
       <div class="app-layout">
         {% include "includes/sidebar.html" %}
+        <div class="app-sidebar-backdrop" @click="closeSidebar()"></div>
         <main class="app-main">
           <header class="app-page-header">
-            <div>
-              <h1 class="h2 mb-1">{% block page_title %}{{ page_title }}{% endblock page_title %}</h1>
-              {% if page_subtitle %}<p class="text-secondary mb-0">{{ page_subtitle }}</p>{% endif %}
+            <div class="app-page-header__title">
+              <button type="button"
+                      class="app-sidebar-toggle"
+                      aria-controls="app-sidebar"
+                      :aria-expanded="isSidebarOpen"
+                      aria-label="{% translate 'Afficher ou masquer le menu' %}"
+                      x-ref="sidebarToggle"
+                      @click="toggleSidebar()">
+                <svg width="22"
+                     height="22"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+              </button>
+              <div>
+                <h1 class="h2 mb-1">{% block page_title %}{{ page_title }}{% endblock page_title %}</h1>
+                {% if page_subtitle %}<p class="text-secondary mb-0">{{ page_subtitle }}</p>{% endif %}
+              </div>
             </div>
             <div class="app-page-header__actions">
               {% block page_actions %}

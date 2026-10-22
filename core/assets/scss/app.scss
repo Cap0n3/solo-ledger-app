@@ -12,28 +12,109 @@ $border-radius: 0.5rem;
 @import "bootstrap/scss/bootstrap";
 
 $sidebar-width: 272px;
+$sidebar-transition-duration: 0.25s;
 
 .app-layout {
   display: flex;
   min-height: 100vh;
 }
 
+// The sidebar sits in the flow from the lg breakpoint up, where it can be
+// collapsed out of view (html.app-sidebar-collapsed, remembered across pages).
+// Below lg it becomes an off-canvas drawer (body.app-sidebar-open).
+// The breakpoint is mirrored in assets/js/app.js.
 .app-sidebar {
   display: flex;
   flex: 0 0 $sidebar-width;
   flex-direction: column;
   width: $sidebar-width;
+  max-width: 100%;
   height: 100vh;
   padding: 1.5rem 1rem;
-  position: sticky;
-  top: 0;
+  overflow-y: auto;
   background: $white;
   border-right: 1px solid $card-border-color;
+
+  @include media-breakpoint-up(lg) {
+    position: sticky;
+    top: 0;
+    @include transition(margin-left $sidebar-transition-duration ease-in-out);
+
+    // Visibility switches only once the slide-out has finished, so the links
+    // stay focusable while the sidebar is on screen and not after.
+    .app-sidebar-collapsed & {
+      margin-left: -$sidebar-width;
+      visibility: hidden;
+      @include transition(
+        margin-left $sidebar-transition-duration ease-in-out,
+        visibility 0s linear $sidebar-transition-duration
+      );
+    }
+  }
+
+  @include media-breakpoint-down(lg) {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: $zindex-offcanvas;
+    height: auto;
+    visibility: hidden;
+    box-shadow: $box-shadow-lg;
+    transform: translateX(-100%);
+    @include transition(
+      transform $sidebar-transition-duration ease-in-out,
+      visibility 0s linear $sidebar-transition-duration
+    );
+
+    .app-sidebar-open & {
+      visibility: visible;
+      transform: none;
+      @include transition(transform $sidebar-transition-duration ease-in-out);
+    }
+  }
+}
+
+.app-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: $zindex-offcanvas-backdrop;
+  visibility: hidden;
+  background: $offcanvas-backdrop-bg;
+  opacity: 0;
+  @include transition(
+    opacity $sidebar-transition-duration ease-in-out,
+    visibility 0s linear $sidebar-transition-duration
+  );
+
+  .app-sidebar-open & {
+    visibility: visible;
+    opacity: $offcanvas-backdrop-opacity;
+    @include transition(opacity $sidebar-transition-duration ease-in-out);
+  }
+
+  @include media-breakpoint-up(lg) {
+    display: none;
+  }
+}
+
+// Keep the page from scrolling behind the open drawer.
+@include media-breakpoint-down(lg) {
+  .app-sidebar-open {
+    overflow: hidden;
+  }
+}
+
+.app-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .app-sidebar__brand {
-  padding: 0 0.5rem;
-  margin-bottom: 1.25rem;
   font-size: 1.05rem;
   font-weight: 700;
 }
@@ -80,18 +161,53 @@ $sidebar-width: 272px;
   border: 0;
 }
 
+.app-sidebar-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: $body-color;
+  background: $white;
+  border: 1px solid $card-border-color;
+  border-radius: $border-radius;
+
+  &:hover {
+    background: $gray-100;
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: $focus-ring-box-shadow;
+  }
+}
+
 .app-main {
   flex: 1 1 auto;
   min-width: 0;
   padding: 2rem 2.5rem;
+
+  @include media-breakpoint-down(md) {
+    padding: 1rem;
+  }
 }
 
 .app-page-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.app-page-header__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .app-page-header__actions {

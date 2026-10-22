@@ -1,7 +1,14 @@
 {% load i18n %}
 
-<aside class="app-sidebar">
-  <div class="app-sidebar__brand">{% translate "Comptabilité des cours" %}</div>
+<aside id="app-sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <div class="app-sidebar__brand">{% translate "Comptabilité des cours" %}</div>
+    <button type="button"
+            class="btn-close d-lg-none"
+            aria-label="{% translate 'Fermer le menu' %}"
+            x-ref="sidebarClose"
+            @click="closeSidebar()"></button>
+  </div>
   {% if user.is_authenticated %}
     <div class="app-sidebar__account">
       <div class="fw-semibold">
@@ -10,7 +17,8 @@
       <div class="small text-secondary">{% translate "Activité :" %} {{ current_profession|default:"—" }}</div>
     </div>
     <div class="app-sidebar__section">{% translate "Espace de travail" %}</div>
-    <nav class="nav flex-column app-sidebar__nav">
+    <nav class="nav flex-column app-sidebar__nav"
+         aria-label="{% translate 'Menu principal' %}">
       <a class="nav-link{% if request.resolver_match.view_name == 'reports:dashboard' %} active{% endif %}"
          href="{% url 'reports:dashboard' %}">{% translate "Tableau de bord" %}</a>
       <a class="nav-link{% if request.resolver_match.view_name == 'students:student_list' %} active{% endif %}"
