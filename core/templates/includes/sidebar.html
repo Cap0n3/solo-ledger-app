@@ -1,0 +1,40 @@
+{% load i18n %}
+
+<aside class="app-sidebar">
+  <div class="app-sidebar__brand">{% translate "Comptabilité des cours" %}</div>
+  {% if user.is_authenticated %}
+    <div class="app-sidebar__account">
+      <div class="fw-semibold">
+        {% blocktranslate with name=user.first_name|default:user.username %}Compte de {{ name }}{% endblocktranslate %}
+      </div>
+      <div class="small text-secondary">{% translate "Activité :" %} {{ current_activity|default:"—" }}</div>
+    </div>
+    <div class="app-sidebar__section">{% translate "Espace de travail" %}</div>
+    <nav class="nav flex-column app-sidebar__nav">
+      <a class="nav-link{% if request.resolver_match.view_name == 'reports:dashboard' %} active{% endif %}"
+         href="{% url 'reports:dashboard' %}">{% translate "Tableau de bord" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'students:student_list' %} active{% endif %}"
+         href="{% url 'students:student_list' %}">{% translate "Élèves" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'students:plan_list' %} active{% endif %}"
+         href="{% url 'students:plan_list' %}">{% translate "Formules" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'accounting:ledger_entry_list' %} active{% endif %}"
+         href="{% url 'accounting:ledger_entry_list' %}">{% translate "Comptabilité" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'accounting:expense_list' %} active{% endif %}"
+         href="{% url 'accounting:expense_list' %}">{% translate "Dépenses" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'bank_imports:bank_statement_list' %} active{% endif %}"
+         href="{% url 'bank_imports:bank_statement_list' %}">{% translate "Import bancaire" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'reports:statistics' %} active{% endif %}"
+         href="{% url 'reports:statistics' %}">{% translate "Statistiques" %}</a>
+      <a class="nav-link{% if request.resolver_match.view_name == 'reports:income_statement' %} active{% endif %}"
+         href="{% url 'reports:income_statement' %}">{% translate "Compte d'exploitation" %}</a>
+    </nav>
+    <div class="app-sidebar__footer">
+      <a class="nav-link{% if request.resolver_match.view_name == 'accounts:settings' %} active{% endif %}"
+         href="{% url 'accounts:settings' %}">{% translate "Paramètres" %}</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="nav-link app-sidebar__logout">{% translate "Déconnexion" %}</button>
+      </form>
+    </div>
+  {% endif %}
+</aside>

@@ -1,0 +1,35 @@
+{% load i18n static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ page_title }}{% endblock title %} · SoloLedger</title>
+    <link rel="stylesheet" href="{% static 'dist/css/app.css' %}">
+  </head>
+  <body>
+    {% block body %}
+      <div class="app-layout">
+        {% include "includes/sidebar.html" %}
+        <main class="app-main">
+          <header class="app-page-header">
+            <div>
+              <h1 class="h2 mb-1">{% block page_title %}{{ page_title }}{% endblock page_title %}</h1>
+              {% if page_subtitle %}<p class="text-secondary mb-0">{{ page_subtitle }}</p>{% endif %}
+            </div>
+            <div class="app-page-header__actions">
+              {% block page_actions %}
+                {% if current_activity %}<span class="app-activity-pill">{{ current_activity }}</span>{% endif %}
+              {% endblock page_actions %}
+            </div>
+          </header>
+          {% include "includes/messages.html" %}
+          {% block content %}
+          {% endblock content %}
+        </main>
+      </div>
+    {% endblock body %}
+    <script src="{% static 'dist/js/app.js' %}"></script>
+  </body>
+</html>

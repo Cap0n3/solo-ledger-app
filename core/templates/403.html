@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}
+  {% translate "Accès refusé" %}
+{% endblock title %}
+{% block page_title %}
+  {% translate "Accès refusé" %}
+{% endblock page_title %}
+{% block content %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-0">{% translate "Vous n'avez pas accès à cette page." %}{% if exception %} {{ exception }}{% endif %}</p>
+    </div>
+  </div>
+{% endblock content %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">{% translate "Compte" %}</div>
+    <div class="card-body">
+      <dl class="row mb-3">
+        <dt class="col-sm-3">{% translate "Nom d'utilisateur" %}</dt>
+        <dd class="col-sm-9">
+          {{ user.username }}
+        </dd>
+        <dt class="col-sm-3">{% translate "Activité" %}</dt>
+        <dd class="col-sm-9">
+          {{ current_activity }}
+        </dd>
+      </dl>
+      <a class="btn btn-outline-primary"
+         href="{% url 'accounts:password_change' %}">{% translate "Changer de mot de passe" %}</a>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body text-secondary">
+      {% translate "Les autres paramètres (années de cours, jour limite de paiement, mots-clés, numéro d'indépendant) arriveront dans les prochaines versions." %}
+    </div>
+  </div>
+{% endblock content %}

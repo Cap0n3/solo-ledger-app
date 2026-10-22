@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block body %}
+  <div class="auth-layout">
+    <div class="auth-card">
+      <div class="h4 fw-bold text-center mb-4">{% translate "Comptabilité des cours" %}</div>
+      {% include "includes/messages.html" %}
+      {% block content %}
+      {% endblock content %}
+    </div>
+  </div>
+{% endblock body %}

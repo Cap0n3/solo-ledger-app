@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-secondary">{% translate "Montant attendu" %}</div>
+          <div class="stat-value">— CHF</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-secondary">{% translate "Montant reçu" %}</div>
+          <div class="stat-value">— CHF</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-secondary">{% translate "Montant restant dû" %}</div>
+          <div class="stat-value">— CHF</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">{% translate "Paiements des élèves" %}</span>
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{% url 'students:student_list' %}">{% translate "Voir tous les élèves" %}</a>
+    </div>
+    <div class="card-body text-secondary">{% translate "Le suivi des paiements du mois apparaîtra ici." %}</div>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{% translate "Transactions à vérifier" %}</span>
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{% url 'bank_imports:bank_statement_list' %}">{% translate "Importer un CSV" %}</a>
+        </div>
+        <div class="card-body text-secondary">
+          {% translate "Les transactions nécessitant une vérification apparaîtront ici." %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{% translate "Dépenses du mois" %}</span>
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{% url 'accounting:expense_list' %}">{% translate "Ajouter une dépense" %}</a>
+        </div>
+        <div class="card-body text-secondary">{% translate "Aucune dépense enregistrée pour cette période." %}</div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

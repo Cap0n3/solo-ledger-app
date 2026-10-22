@@ -1,0 +1,20 @@
+{% extends "base_auth.html" %}
+
+{% load i18n %}
+
+{% block title %}
+  {% translate "Connexion" %}
+{% endblock title %}
+{% block content %}
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <h1 class="h5 mb-3">{% translate "Connexion" %}</h1>
+      <form method="post" action="{% url 'accounts:login' %}">
+        {% csrf_token %}
+        {% include "includes/form.html" %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary w-100">{% translate "Se connecter" %}</button>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
