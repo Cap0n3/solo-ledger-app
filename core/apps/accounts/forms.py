@@ -1,3 +1,5 @@
+from typing import Self
+
 from django import forms
 from django.contrib.auth import forms as auth_forms
 from django.contrib.auth import password_validation
@@ -5,6 +7,8 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
+
+from .models import User
 
 # Widgets carry the Bootstrap classes so templates stay free of per-field markup.
 
@@ -79,3 +83,29 @@ class AvatarForm(forms.Form):
         if avatar.size is not None and avatar.size > AVATAR_MAX_BYTES:
             raise ValidationError(_("L'image dépasse 2 Mo."))
         return avatar
+
+
+class ProfileForm(forms.Form):
+    # Both names are optional, like on the user model: the interface falls back
+    # to the username when the first name is empty.
+    first_name = forms.CharField(
+        label=_("Prénom"),
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(
+            attrs={"class": "form-control", "autocomplete": "given-name"}
+        ),
+    )
+    last_name = forms.CharField(
+        label=_("Nom"),
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(
+            attrs={"class": "form-control", "autocomplete": "family-name"}
+        ),
+    )
+
+    @classmethod
+    def for_user(cls, user: User) -> Self:
+        """An unbound form showing the user's current names."""
+        return cls(initial={"first_name": user.first_name, "last_name": user.last_name})

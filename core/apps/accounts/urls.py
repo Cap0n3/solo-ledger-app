@@ -17,5 +17,7 @@ urlpatterns = [
         name="password_change_done",
     ),
     path("settings/", views.settings_view, name="settings"),
+    path("settings/profile/", views.profile_update_view, name="profile_update"),
+    path("settings/avatar/", views.avatar_update_view, name="avatar_update"),
     path("settings/avatar/remove/", views.avatar_remove_view, name="avatar_remove"),
 ]

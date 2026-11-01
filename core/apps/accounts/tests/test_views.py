@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from core.apps.accounts import forms as accounts_forms
-from core.apps.accounts.services import user_avatar_update
+from core.apps.accounts.services import user_avatar_update, user_profile_update
 from core.apps.accounts.types import CURRENT_PROFESSION_SESSION_KEY
 
 from .factories import ProfessionFactory, UserFactory, avatar_upload
@@ -119,7 +119,9 @@ def test_settings_upload_sets_avatar(client):
     profession = ProfessionFactory.create()
     client.force_login(profession.user)
 
-    response = client.post(reverse("accounts:settings"), {"avatar": avatar_upload()})
+    response = client.post(
+        reverse("accounts:avatar_update"), {"avatar": avatar_upload()}
+    )
 
     assert response.status_code == 302
     assert response.url == reverse("accounts:settings")
@@ -132,7 +134,7 @@ def test_settings_rejects_file_that_is_not_an_image(client):
     client.force_login(profession.user)
     upload = SimpleUploadedFile("notes.png", b"not an image", content_type="image/png")
 
-    response = client.post(reverse("accounts:settings"), {"avatar": upload})
+    response = client.post(reverse("accounts:avatar_update"), {"avatar": upload})
 
     assert response.status_code == 200
     assert "avatar" in response.context["avatar_form"].errors
@@ -145,7 +147,9 @@ def test_settings_rejects_image_above_size_limit(client, monkeypatch):
     profession = ProfessionFactory.create()
     client.force_login(profession.user)
 
-    response = client.post(reverse("accounts:settings"), {"avatar": avatar_upload()})
+    response = client.post(
+        reverse("accounts:avatar_update"), {"avatar": avatar_upload()}
+    )
 
     assert response.status_code == 200
     assert "avatar" in response.context["avatar_form"].errors
@@ -172,7 +176,7 @@ def test_avatar_upload_never_touches_another_user(client):
     other = ProfessionFactory.create()
     client.force_login(own.user)
 
-    client.post(reverse("accounts:settings"), {"avatar": avatar_upload()})
+    client.post(reverse("accounts:avatar_update"), {"avatar": avatar_upload()})
 
     own.user.refresh_from_db()
     other.user.refresh_from_db()
@@ -194,3 +198,68 @@ def test_topbar_shows_initial_without_avatar_and_image_with_one(client):
     content = client.get(reverse("reports:dashboard")).content.decode()
     assert "app-avatar--initial" not in content
     assert profession.user.avatar.url in content
+
+
+def test_settings_form_shows_current_names(client):
+    profession = ProfessionFactory.create()
+    user_profile_update(user=profession.user, first_name="Alice", last_name="Martin")
+    client.force_login(profession.user)
+
+    response = client.get(reverse("accounts:settings"))
+
+    assert response.status_code == 200
+    assert response.context["profile_form"].initial == {
+        "first_name": "Alice",
+        "last_name": "Martin",
+    }
+
+
+def test_profile_update_sets_first_and_last_name(client):
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    assert client.get(reverse("accounts:profile_update")).status_code == 405
+
+    response = client.post(
+        reverse("accounts:profile_update"),
+        {"first_name": "  Alice ", "last_name": "Martin"},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("accounts:settings")
+    profession.user.refresh_from_db()
+    assert profession.user.first_name == "Alice"
+    assert profession.user.last_name == "Martin"
+
+
+def test_profile_update_rejects_name_longer_than_the_model_allows(client):
+    profession = ProfessionFactory.create()
+    original_first_name = profession.user.first_name
+    client.force_login(profession.user)
+
+    response = client.post(
+        reverse("accounts:profile_update"),
+        {"first_name": "a" * 151, "last_name": "Martin"},
+    )
+
+    assert response.status_code == 200
+    assert "first_name" in response.context["profile_form"].errors
+    profession.user.refresh_from_db()
+    assert profession.user.first_name == original_first_name
+
+
+def test_profile_update_never_touches_another_user(client):
+    own = ProfessionFactory.create()
+    other = ProfessionFactory.create()
+    other_first_name = other.user.first_name
+    client.force_login(own.user)
+
+    client.post(
+        reverse("accounts:profile_update"),
+        {"first_name": "Alice", "last_name": "Martin"},
+    )
+
+    own.user.refresh_from_db()
+    other.user.refresh_from_db()
+    assert own.user.first_name == "Alice"
+    assert other.user.first_name == other_first_name

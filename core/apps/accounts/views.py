@@ -7,8 +7,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from .decorators import profession_required
-from .forms import AvatarForm, LoginForm, PasswordChangeForm
-from .services import user_avatar_remove, user_avatar_update
+from .forms import AvatarForm, LoginForm, PasswordChangeForm, ProfileForm
+from .services import user_avatar_remove, user_avatar_update, user_profile_update
 from .types import ProfessionHttpRequest
 
 
@@ -38,25 +38,61 @@ class PasswordChangeDoneView(auth_views.PasswordChangeDoneView):
         return context
 
 
-@profession_required
-def settings_view(request: ProfessionHttpRequest) -> HttpResponse:
-    """Account settings. Business settings arrive in later milestones."""
-    if request.method == "POST":
-        avatar_form = AvatarForm(request.POST, request.FILES)
-        if avatar_form.is_valid():
-            user_avatar_update(
-                user=request.user, avatar=avatar_form.cleaned_data["avatar"]
-            )
-            messages.success(request, _("Avatar mis à jour."))
-            return redirect("accounts:settings")
-    else:
-        avatar_form = AvatarForm()
+def _settings_response(
+    request: ProfessionHttpRequest,
+    *,
+    profile_form: ProfileForm,
+    avatar_form: AvatarForm,
+) -> HttpResponse:
     context = {
         "page_title": _("Paramètres"),
         "page_subtitle": _("Informations du compte et de l'activité"),
+        "profile_form": profile_form,
         "avatar_form": avatar_form,
     }
     return render(request, "accounts/settings.html", context)
+
+
+@profession_required
+def settings_view(request: ProfessionHttpRequest) -> HttpResponse:
+    """Account settings. Business settings arrive in later milestones."""
+    return _settings_response(
+        request,
+        profile_form=ProfileForm.for_user(request.user),
+        avatar_form=AvatarForm(),
+    )
+
+
+@profession_required
+@require_POST
+def profile_update_view(request: ProfessionHttpRequest) -> HttpResponse:
+    profile_form = ProfileForm(request.POST)
+    if profile_form.is_valid():
+        user_profile_update(
+            user=request.user,
+            first_name=profile_form.cleaned_data["first_name"],
+            last_name=profile_form.cleaned_data["last_name"],
+        )
+        messages.success(request, _("Profil mis à jour."))
+        return redirect("accounts:settings")
+    return _settings_response(
+        request, profile_form=profile_form, avatar_form=AvatarForm()
+    )
+
+
+@profession_required
+@require_POST
+def avatar_update_view(request: ProfessionHttpRequest) -> HttpResponse:
+    avatar_form = AvatarForm(request.POST, request.FILES)
+    if avatar_form.is_valid():
+        user_avatar_update(user=request.user, avatar=avatar_form.cleaned_data["avatar"])
+        messages.success(request, _("Avatar mis à jour."))
+        return redirect("accounts:settings")
+    return _settings_response(
+        request,
+        profile_form=ProfileForm.for_user(request.user),
+        avatar_form=avatar_form,
+    )
 
 
 @profession_required

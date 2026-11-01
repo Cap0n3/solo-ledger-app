@@ -20,6 +20,13 @@ def user_create(
     )
 
 
+def user_profile_update(*, user: User, first_name: str, last_name: str) -> User:
+    user.first_name = first_name
+    user.last_name = last_name
+    user.save(update_fields=["first_name", "last_name"])
+    return user
+
+
 def user_avatar_update(*, user: User, avatar: File[bytes]) -> User:
     """Replace the user's avatar. The previous file is removed from storage."""
     if user.avatar:

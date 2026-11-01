@@ -16,8 +16,19 @@
           {{ current_profession }}
         </dd>
       </dl>
-      <a class="btn btn-outline-primary"
-         href="{% url 'accounts:password_change' %}">{% translate "Changer de mot de passe" %}</a>
+      <form class="form-card"
+            method="post"
+            action="{% url 'accounts:profile_update' %}">
+        {% csrf_token %}
+        {% with form=profile_form %}
+          {% include "includes/form.html" %}
+        {% endwith %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">{% translate "Enregistrer" %}</button>
+          <a class="btn btn-outline-primary"
+             href="{% url 'accounts:password_change' %}">{% translate "Changer de mot de passe" %}</a>
+        </div>
+      </form>
     </div>
   </div>
   <div class="card mb-4">
@@ -29,7 +40,7 @@
       </div>
       <form class="form-card"
             method="post"
-            action="{% url 'accounts:settings' %}"
+            action="{% url 'accounts:avatar_update' %}"
             enctype="multipart/form-data">
         {% csrf_token %}
         {% with form=avatar_form %}

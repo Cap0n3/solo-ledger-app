@@ -5,6 +5,7 @@ from core.apps.accounts.services import (
     profession_create,
     user_avatar_remove,
     user_avatar_update,
+    user_profile_update,
 )
 
 from .factories import ProfessionFactory, UserFactory, avatar_upload
@@ -83,3 +84,13 @@ def test_user_avatar_remove_without_avatar_changes_nothing():
 
     user.refresh_from_db()
     assert not user.avatar
+
+
+def test_user_profile_update_sets_both_names():
+    user = UserFactory.create()
+
+    user_profile_update(user=user, first_name="Alice", last_name="Martin")
+
+    user.refresh_from_db()
+    assert user.first_name == "Alice"
+    assert user.last_name == "Martin"
