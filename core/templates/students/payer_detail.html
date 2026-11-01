@@ -66,13 +66,8 @@
           <div class="text-secondary small mb-2">{% translate "Historique" %}</div>
           {% include "students/includes/plan_history.html" %}
           {% if latest_assignment %}
-            <form class="mt-3"
-                  method="post"
-                  action="{% url 'students:payer_plan_remove_latest' payer.pk %}">
-              {% csrf_token %}
-              <button type="submit"
-                      class="btn btn-outline-danger btn-sm">{% translate "Supprimer la dernière attribution" %}</button>
-            </form>
+            {% url 'students:payer_plan_remove_latest' payer.pk as remove_url %}
+            {% include "students/includes/plan_remove_latest.html" with remove_url=remove_url %}
           {% endif %}
         </div>
       </div>

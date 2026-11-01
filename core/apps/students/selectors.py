@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
 
@@ -6,7 +6,7 @@ from django.db.models import Count, Q, QuerySet
 from django.shortcuts import get_object_or_404
 
 from core.apps.accounts.models import Profession
-from core.utils.months import month_start
+from core.utils.months import month_add, month_start
 
 from .models import Payer, Plan, PlanAssignment, Student
 
@@ -114,6 +114,25 @@ def plan_assignment_latest(
     *, student: Student | None = None, payer: Payer | None = None
 ) -> PlanAssignment | None:
     return plan_assignment_list(student=student, payer=payer).first()
+
+
+def plan_assignment_reopened_by_removal(
+    *, assignments: Sequence[PlanAssignment]
+) -> PlanAssignment | None:
+    """The assignment that comes back into force if the latest one is removed.
+
+    `assignments` is one target's history, most recent first. The previous
+    assignment is reopened only when the latest one had closed it, i.e. it
+    ended the month before the latest one started. Shared by the removal
+    service and by the confirmation dialog, so both tell the same story.
+    """
+    if len(assignments) < 2:
+        return None
+    latest = assignments[0]
+    previous = assignments[1]
+    if previous.ends_on == month_add(latest.starts_on, -1):
+        return previous
+    return None
 
 
 def plan_assignment_current(

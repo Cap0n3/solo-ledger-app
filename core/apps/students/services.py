@@ -10,7 +10,11 @@ from core.apps.accounts.models import Profession
 from core.utils.months import month_add, month_start, validate_month_start
 
 from .models import Payer, Plan, PlanAssignment, Student
-from .selectors import plan_assignment_latest, plan_assignment_list
+from .selectors import (
+    plan_assignment_latest,
+    plan_assignment_list,
+    plan_assignment_reopened_by_removal,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -378,7 +382,7 @@ def plan_assignment_remove_latest(
     """Remove the most recent assignment (a correction).
 
     The previous assignment is reopened only when it had been closed by the
-    removed one, i.e. it ended the month before the removed one started.
+    removed one; see `plan_assignment_reopened_by_removal`.
     """
     assignments = list(plan_assignment_list(student=student, payer=payer)[:2])
     if not assignments:
@@ -386,12 +390,11 @@ def plan_assignment_remove_latest(
             _("Aucune attribution à supprimer."), code="no_assignment"
         )
     latest = assignments[0]
-    previous = assignments[1] if len(assignments) > 1 else None
+    reopened = plan_assignment_reopened_by_removal(assignments=assignments)
     latest_id = latest.pk
-    latest_starts_on = latest.starts_on
     latest.delete()
     logger.info("Plan assignment removed: assignment_id=%s", latest_id)
-    if previous is not None and previous.ends_on == month_add(latest_starts_on, -1):
-        previous.ends_on = None
-        previous.save(update_fields=["ends_on"])
-        logger.info("Plan assignment reopened: assignment_id=%s", previous.pk)
+    if reopened is not None:
+        reopened.ends_on = None
+        reopened.save(update_fields=["ends_on"])
+        logger.info("Plan assignment reopened: assignment_id=%s", reopened.pk)

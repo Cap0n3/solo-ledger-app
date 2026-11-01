@@ -161,6 +161,9 @@ def student_detail(request: ProfessionHttpRequest, student_id: int) -> HttpRespo
         "current_plan": selectors.student_current_plan(student=student, month=month),
         "assignments": assignments,
         "latest_assignment": latest_assignment,
+        "reopened_assignment": selectors.plan_assignment_reopened_by_removal(
+            assignments=assignments
+        ),
         "siblings": siblings,
         "payer_plan": payer_plan,
         "has_past_end_date": has_past_end_date,
@@ -396,6 +399,9 @@ def payer_detail(request: ProfessionHttpRequest, payer_id: int) -> HttpResponse:
         "current_plan": selectors.payer_current_plan(payer=payer, month=month),
         "assignments": assignments,
         "latest_assignment": assignments[0] if assignments else None,
+        "reopened_assignment": selectors.plan_assignment_reopened_by_removal(
+            assignments=assignments
+        ),
     }
     return render(request, "students/payer_detail.html", context)
 

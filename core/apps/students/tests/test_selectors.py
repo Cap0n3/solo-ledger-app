@@ -8,6 +8,7 @@ from core.apps.students.selectors import (
     payer_current_plan,
     plan_assignable_list,
     plan_assignment_current,
+    plan_assignment_reopened_by_removal,
     student_current_plan,
     student_list,
     student_list_items,
@@ -80,6 +81,25 @@ def test_plan_assignment_current_picks_the_assignment_covering_the_month():
         )
         is None
     )
+
+
+def test_plan_assignment_reopened_by_removal_is_the_one_the_latest_closed():
+    first = PlanAssignmentFactory.create(starts_on=SEPTEMBER, ends_on=OCTOBER)
+    second = PlanAssignmentFactory.create(
+        profession=first.profession, student=first.student, starts_on=NOVEMBER
+    )
+
+    assert plan_assignment_reopened_by_removal(assignments=[second, first]) == first
+
+
+def test_plan_assignment_reopened_by_removal_ignores_one_ended_by_hand():
+    first = PlanAssignmentFactory.create(starts_on=SEPTEMBER, ends_on=SEPTEMBER)
+    second = PlanAssignmentFactory.create(
+        profession=first.profession, student=first.student, starts_on=NOVEMBER
+    )
+
+    assert plan_assignment_reopened_by_removal(assignments=[second, first]) is None
+    assert plan_assignment_reopened_by_removal(assignments=[second]) is None
 
 
 def test_student_current_plan_is_none_after_the_end_date():

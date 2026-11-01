@@ -331,6 +331,35 @@ def test_student_detail_shows_plan_history_payer_and_siblings(client):
     assert response.context["nav_section"] == "students"
 
 
+def test_student_detail_names_the_plan_restored_by_removing_the_latest(client):
+    import datetime
+
+    from .factories import StudentFactory
+
+    profession = ProfessionFactory.create()
+    student = StudentFactory.create(profession=profession)
+    PlanAssignmentFactory.create(
+        profession=profession,
+        student=student,
+        plan=PlanFactory.create(profession=profession, name="Ancienne formule"),
+        starts_on=datetime.date(2026, 9, 1),
+        ends_on=datetime.date(2026, 10, 1),
+    )
+    PlanAssignmentFactory.create(
+        profession=profession,
+        student=student,
+        plan=PlanFactory.create(profession=profession, name="Nouvelle formule"),
+        starts_on=datetime.date(2026, 11, 1),
+    )
+    client.force_login(profession.user)
+
+    response = client.get(reverse("students:student_detail", args=[student.pk]))
+
+    assert response.status_code == 200
+    assert response.context["reopened_assignment"].plan.name == "Ancienne formule"
+    assert "redeviendra la formule en cours" in response.content.decode()
+
+
 def test_student_pages_return_404_for_another_professions_student(client):
     from .factories import StudentFactory
 

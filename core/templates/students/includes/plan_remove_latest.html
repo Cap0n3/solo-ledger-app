@@ -1,0 +1,54 @@
+{% load i18n %}
+
+{% comment %}
+  Button and confirmation dialog to remove the latest plan assignment.
+  Expects `latest_assignment`, `reopened_assignment` (the one that comes back
+  into force, or None) and `remove_url` (the POST action) in the context.
+{% endcomment %}
+<button type="button"
+        class="btn btn-outline-danger btn-sm mt-3"
+        data-bs-toggle="modal"
+        data-bs-target="#plan-remove-latest-modal">{% translate "Supprimer l'attribution" %}</button>
+<div class="modal fade"
+     id="plan-remove-latest-modal"
+     tabindex="-1"
+     aria-labelledby="plan-remove-latest-title"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5"
+            id="plan-remove-latest-title">{% translate "Supprimer l'attribution" %}</h2>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="{% translate 'Fermer' %}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">
+          {% blocktranslate trimmed with plan=latest_assignment.plan month=latest_assignment.starts_on|date:"F Y" %}
+            La formule « {{ plan }} » attribuée depuis {{ month }} sera retirée de l'historique.
+          {% endblocktranslate %}
+        </p>
+        <p class="mb-0">
+          {% if reopened_assignment %}
+            {% blocktranslate trimmed with plan=reopened_assignment.plan %}
+              La formule « {{ plan }} » redeviendra la formule en cours.
+            {% endblocktranslate %}
+          {% else %}
+            {% translate "Aucune autre formule ne prendra le relais." %}
+          {% endif %}
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button"
+                class="btn btn-outline-secondary"
+                data-bs-dismiss="modal">{% translate "Annuler" %}</button>
+        <form method="post" action="{{ remove_url }}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">{% translate "Supprimer" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
