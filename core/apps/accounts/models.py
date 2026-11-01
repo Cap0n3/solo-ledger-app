@@ -1,9 +1,16 @@
 import uuid
+from datetime import date
 from pathlib import Path
 
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import F, Q
 from django.utils.translation import gettext_lazy as _
+
+from core.utils.months import month_range, month_span, validate_month_start
+
+LESSON_YEAR_MAX_MONTHS = 12
 
 
 def user_avatar_upload_to(instance: models.Model, filename: str) -> str:
@@ -83,3 +90,76 @@ class ProfessionOwnedModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class LessonYear(ProfessionOwnedModel):
+    """A lesson year (« année de cours ») of a profession: its billed months.
+
+    Both bounds are first days of months, inclusive. August is typically not
+    billed, so a year runs e.g. from September to July. Years of a profession
+    never overlap; that rule needs the sibling years and lives in the services.
+    """
+
+    first_month = models.DateField(
+        _("premier mois facturé"), validators=[validate_month_start]
+    )
+    last_month = models.DateField(
+        _("dernier mois facturé"), validators=[validate_month_start]
+    )
+
+    class Meta:
+        verbose_name = _("année de cours")
+        verbose_name_plural = _("années de cours")
+        ordering = ("-first_month",)
+        constraints = (
+            models.UniqueConstraint(
+                fields=("profession", "first_month"),
+                name="unique_lesson_year_start_per_profession",
+                violation_error_message=_(
+                    "Une année de cours commence déjà ce mois-là."
+                ),
+            ),
+            models.CheckConstraint(
+                condition=Q(last_month__gte=F("first_month")),
+                name="lesson_year_last_month_after_first",
+            ),
+        )
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def name(self) -> str:
+        """« 2026-2027 », or « 2026 » when the year stays within one calendar year."""
+        if self.first_month.year == self.last_month.year:
+            return str(self.first_month.year)
+        return f"{self.first_month.year}-{self.last_month.year}"
+
+    @property
+    def months(self) -> list[date]:
+        return month_range(self.first_month, self.last_month)
+
+    def contains(self, month: date) -> bool:
+        return self.first_month <= month <= self.last_month
+
+    def clean(self) -> None:
+        if self.first_month is None or self.last_month is None:
+            return
+        if self.last_month < self.first_month:
+            raise ValidationError(
+                {
+                    "last_month": ValidationError(
+                        _("Le dernier mois doit être postérieur ou égal au premier."),
+                        code="last_before_first",
+                    )
+                }
+            )
+        if month_span(self.first_month, self.last_month) > LESSON_YEAR_MAX_MONTHS:
+            raise ValidationError(
+                {
+                    "last_month": ValidationError(
+                        _("Une année de cours couvre au plus douze mois."),
+                        code="too_long",
+                    )
+                }
+            )

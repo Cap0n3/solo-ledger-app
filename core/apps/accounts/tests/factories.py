@@ -1,3 +1,4 @@
+import datetime
 import io
 
 import factory
@@ -5,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from factory.django import DjangoModelFactory
 from PIL import Image
 
-from core.apps.accounts.models import Profession, User
+from core.apps.accounts.models import LessonYear, Profession, User
 
 
 class UserFactory(DjangoModelFactory[User]):
@@ -25,6 +26,15 @@ class ProfessionFactory(DjangoModelFactory[Profession]):
 
     user = factory.SubFactory(UserFactory)
     name = factory.Sequence(lambda n: f"Profession {n}")
+
+
+class LessonYearFactory(DjangoModelFactory[LessonYear]):
+    class Meta:
+        model = LessonYear
+
+    profession = factory.SubFactory(ProfessionFactory)
+    first_month = datetime.date(2026, 9, 1)
+    last_month = datetime.date(2027, 7, 1)
 
 
 def avatar_upload(name: str = "avatar.png") -> SimpleUploadedFile:

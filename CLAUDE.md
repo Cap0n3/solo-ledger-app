@@ -56,11 +56,12 @@ Run `make lint` and `make test` before considering a task done.
 core/                  # Python package: settings module is core.config.settings.*
 ├── config/            # settings (base, development, production, test), urls, wsgi/asgi
 ├── apps/              # one Django app per business domain
-│   ├── accounts/      # User, Profession, data-separation helpers, seed command
-│   ├── students/
+│   ├── accounts/      # User, Profession, LessonYear (profession settings), data-separation helpers, seed command
+│   ├── students/      # Plan, Payer, Student, PlanAssignment
 │   ├── accounting/
 │   ├── bank_imports/
 │   └── reports/       # dashboard, statistics, income statement
+├── utils/             # shared helpers that are not an app (months, form fields)
 ├── templates/
 ├── assets/            # SCSS and JS sources
 └── static/dist/       # compiled assets (generated, not versioned, do not edit by hand)
@@ -95,6 +96,12 @@ The bank export format can change without notice. All parsing lives behind a sin
   The current profession is resolved by the `profession_current` selector (session, then oldest).
 - Every selector and service takes the user or profession explicitly and filters by it. Never query business models without ownership filtering.
 - Views must never fetch objects by ID alone. Use `get_object_or_404` with an ownership filter, through a selector.
+- A selector or service may take an already-owned instance (e.g. `student=`) instead of `profession=`
+  only when that instance came from a profession-filtered selector in the same view.
+- Form fields that pick related records (`ModelChoiceField`) get their queryset from a
+  profession-filtered selector (`Form.for_profession(...)`), so a posted foreign id is a field error.
+- Services raise `ValidationError` for business refusals. Form views catch it and call
+  `form.add_error(None, error)`; POST-only action views call `messages.error` and redirect.
 - Every feature needs a test proving that one user cannot read or modify another user's data.
 
 ## Language rules
@@ -114,7 +121,13 @@ Always use these names. Do not invent synonyms.
 | payeur                       | `Payer`                |
 | nom de référence paiements   | `payment_reference_name` |
 | formule                      | `Plan`                 |
+| type de formule              | `Plan.Kind` (`monthly` / `single_lesson`) |
+| formule archivée             | `Plan.is_archived`     |
 | changement de formule        | `PlanAssignment`       |
+| attribution de formule       | `PlanAssignment` (target: `student` or `payer`) |
+| mois de prise d'effet        | `PlanAssignment.starts_on` (first day of month) |
+| statut de l'élève            | `Student.Status` (`active` / `paused` / `ended`) |
+| nom de référence effectif    | `reference_name` (payer's, else own, else full name) |
 | cours à la carte             | `single_lesson`        |
 | formule famille              | `family plan` (a `Plan` assigned to a `Payer`) |
 | mois annulé                  | `ExpectedPayment` with status `cancelled` |
@@ -156,6 +169,9 @@ When a new domain concept appears, add it to this table before using it.
 - **Dates**: use `datetime.date` for business dates (months, due dates). A billing month is represented by the first day of that month.
 - **Comments** explain *why*, not *what*. Business rules get a short docstring referencing the rule.
 - Records that carry a price (expected payments, ledger entries) store a snapshot of the amount. Changing a plan's price never rewrites history.
+- `Student.end_date` is the billing boundary that counts; `Student.status` is informational
+  (the effect of `paused` on expected payments is decided in the payments milestone).
+- A payer's family plan and its students' individual plans coexist: expected payments add up.
 
 ### Logging
 
