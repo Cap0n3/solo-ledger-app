@@ -14,9 +14,11 @@
       {% for assignment in assignments %}
         <tr>
           <td>{{ assignment.plan }}</td>
-          <td class="text-end">{% include "students/includes/plan_price.html" with plan=assignment.plan %}</td>
-          <td>{{ assignment.starts_on|date:"F Y" }}</td>
-          <td>{% if assignment.ends_on %}{{ assignment.ends_on|date:"F Y" }}{% else %}<span class="text-secondary">{% translate "en cours" %}</span>{% endif %}</td>
+          <td class="text-end text-nowrap">
+            {% include "students/includes/plan_price.html" with plan=assignment.plan %}
+          </td>
+          <td class="text-nowrap">{{ assignment.starts_on|date:"F Y" }}</td>
+          <td class="text-nowrap">{% if assignment.ends_on %}{{ assignment.ends_on|date:"F Y" }}{% else %}<span class="text-secondary">{% translate "en cours" %}</span>{% endif %}</td>
         </tr>
       {% endfor %}
     </tbody>
