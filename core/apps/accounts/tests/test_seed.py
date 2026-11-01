@@ -3,7 +3,8 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from core.apps.accounts.management.commands.seed import SEED_PASSWORD
-from core.apps.accounts.models import Profession, User
+from core.apps.accounts.models import LessonYear, Profession, User
+from core.apps.students.models import Payer, Plan, PlanAssignment, Student
 
 pytestmark = pytest.mark.django_db
 
@@ -16,6 +17,20 @@ def test_seed_is_idempotent_and_creates_usable_accounts(settings):
 
     assert User.objects.filter(username__startswith="test_").count() == 3
     assert Profession.objects.count() == 2
+    guitar = Profession.objects.get(name="Cours de guitare")
+    singing = Profession.objects.get(name="Cours de chant")
+    assert Plan.objects.filter(profession=guitar).count() == 3
+    assert Plan.objects.filter(profession=singing).count() == 8
+    assert Student.objects.filter(profession=guitar).count() == 12
+    assert Student.objects.filter(profession=singing).count() == 12
+    assert Payer.objects.count() == 3
+    assert LessonYear.objects.filter(profession=guitar).count() == 2
+    assert PlanAssignment.objects.filter(payer__isnull=False).count() == 1
+    assert all(
+        student.first_name.startswith("[TEST]")
+        and student.email.endswith("@example.com")
+        for student in Student.objects.all()
+    )
     guitar_user = User.objects.get(username="test_guitar")
     assert guitar_user.check_password(SEED_PASSWORD)
     assert guitar_user.first_name.startswith("[TEST]")

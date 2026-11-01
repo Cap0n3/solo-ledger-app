@@ -35,6 +35,10 @@ Créés par `make seed` (mot de passe commun : `sololedger`) :
 | `test_singing` | utilisateur standard                   | Cours de chant    |
 | `test_admin`   | superuser technique (accès à `/admin/`) | aucune            |
 
+Chaque activité reçoit aussi ses formules (celles des exemples de `SPECS.md`), deux années de
+cours (2025-2026 et 2026-2027), une douzaine d'élèves aux noms fictifs préfixés `[TEST]`, et des
+payeurs dont une famille avec formule famille.
+
 Ces données sont fictives et clairement identifiées par le préfixe `[TEST]`. La commande ne
 fonctionne que si `SEED_ALLOWED` est vrai dans les settings (développement et tests uniquement).
 

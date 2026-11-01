@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from core.apps.accounts.models import User
+from core.apps.accounts.models import Profession, User
 from core.apps.accounts.selectors import profession_list
 from core.apps.accounts.services import profession_create, user_create
+from core.apps.students.seed import seed_profession_students
 
 SEED_PASSWORD = "sololedger"
 SEED_ADMIN_USERNAME = "test_admin"
@@ -18,6 +19,7 @@ class SeedAccount:
     username: str
     first_name: str
     profession_name: str
+    catalog_name: str
 
 
 SEED_ACCOUNTS = (
@@ -25,11 +27,13 @@ SEED_ACCOUNTS = (
         username="test_guitar",
         first_name="[TEST] Guitare",
         profession_name="Cours de guitare",
+        catalog_name="guitar",
     ),
     SeedAccount(
         username="test_singing",
         first_name="[TEST] Chant",
         profession_name="Cours de chant",
+        catalog_name="singing",
     ),
 )
 
@@ -37,8 +41,9 @@ SEED_ACCOUNTS = (
 class Command(BaseCommand):
     help = (
         "Create fake development data: two teacher accounts with one profession "
-        "each, plus a technical admin account. Safe to run several times. "
-        "Refused unless settings.SEED_ALLOWED is true."
+        "each (plans, lesson years, payers and students included), plus a "
+        "technical admin account. Safe to run several times. Refused unless "
+        "settings.SEED_ALLOWED is true."
     )
 
     def handle(self, *args: object, **options: object) -> None:
@@ -48,7 +53,14 @@ class Command(BaseCommand):
             )
         for account in SEED_ACCOUNTS:
             user = self._user_get_or_create(account)
-            self._profession_get_or_create(user=user, name=account.profession_name)
+            profession = self._profession_get_or_create(
+                user=user, name=account.profession_name
+            )
+            seed_profession_students(
+                profession=profession,
+                catalog_name=account.catalog_name,
+                stdout=self.stdout,
+            )
         self._admin_get_or_create()
         self.stdout.write(
             self.style.SUCCESS(
@@ -70,12 +82,14 @@ class Command(BaseCommand):
         self.stdout.write(f"Created user {account.username}")
         return user
 
-    def _profession_get_or_create(self, *, user: User, name: str) -> None:
-        if profession_list(user=user).filter(name=name).exists():
+    def _profession_get_or_create(self, *, user: User, name: str) -> Profession:
+        existing = profession_list(user=user).filter(name=name).first()
+        if existing is not None:
             self.stdout.write(f"Profession '{name}' already exists for {user.username}")
-            return
-        profession_create(user=user, name=name)
+            return existing
+        profession = profession_create(user=user, name=name)
         self.stdout.write(f"Created profession '{name}' for {user.username}")
+        return profession
 
     def _admin_get_or_create(self) -> None:
         if User.objects.filter(username=SEED_ADMIN_USERNAME).exists():
