@@ -58,9 +58,45 @@
       {% endif %}
     </div>
   </div>
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">{% translate "Années de cours" %}</span>
+      <a class="btn btn-outline-primary btn-sm"
+         href="{% url 'accounts:lesson_year_create' %}">{% translate "Ajouter une année" %}</a>
+    </div>
+    {% if lesson_years %}
+      <table class="table align-middle mb-0">
+        <thead class="table-light text-uppercase small">
+          <tr>
+            <th scope="col">{% translate "Année" %}</th>
+            <th scope="col">{% translate "Premier mois facturé" %}</th>
+            <th scope="col">{% translate "Dernier mois facturé" %}</th>
+            <th scope="col" class="text-end">{% translate "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lesson_year in lesson_years %}
+            <tr>
+              <td class="fw-semibold">{{ lesson_year.name }}</td>
+              <td>{{ lesson_year.first_month|date:"F Y" }}</td>
+              <td>{{ lesson_year.last_month|date:"F Y" }}</td>
+              <td class="text-end">
+                <a class="btn btn-outline-secondary btn-sm"
+                   href="{% url 'accounts:lesson_year_update' lesson_year.pk %}">{% translate "Modifier" %}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="card-body text-secondary">
+        {% translate "Aucune année de cours. Ajoutez-en une pour définir les mois facturés." %}
+      </div>
+    {% endif %}
+  </div>
   <div class="card">
     <div class="card-body text-secondary">
-      {% translate "Les autres paramètres (années de cours, jour limite de paiement, mots-clés, numéro d'indépendant) arriveront dans les prochaines versions." %}
+      {% translate "Les autres paramètres (jour limite de paiement, mots-clés, numéro d'indépendant) arriveront dans les prochaines versions." %}
     </div>
   </div>
 {% endblock content %}

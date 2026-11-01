@@ -8,7 +8,9 @@ from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
 
-from .models import User
+from core.utils.forms import MonthField
+
+from .models import LessonYear, User
 
 # Widgets carry the Bootstrap classes so templates stay free of per-field markup.
 
@@ -109,3 +111,22 @@ class ProfileForm(forms.Form):
     def for_user(cls, user: User) -> Self:
         """An unbound form showing the user's current names."""
         return cls(initial={"first_name": user.first_name, "last_name": user.last_name})
+
+
+class LessonYearForm(forms.Form):
+    first_month = MonthField(label=_("Premier mois facturé"))
+    last_month = MonthField(
+        label=_("Dernier mois facturé"),
+        help_text=_(
+            "Une année de cours couvre au plus douze mois, août non compris en général."
+        ),
+    )
+
+    @classmethod
+    def for_lesson_year(cls, lesson_year: LessonYear) -> Self:
+        return cls(
+            initial={
+                "first_month": lesson_year.first_month,
+                "last_month": lesson_year.last_month,
+            }
+        )

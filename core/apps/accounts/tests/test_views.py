@@ -263,3 +263,102 @@ def test_profile_update_never_touches_another_user(client):
     other.user.refresh_from_db()
     assert own.user.first_name == "Alice"
     assert other.user.first_name == other_first_name
+
+
+# --- Lesson years in settings -----------------------------------------------
+
+
+def test_settings_page_lists_the_professions_lesson_years(client):
+    import datetime
+
+    from .factories import LessonYearFactory
+
+    profession = ProfessionFactory.create()
+    LessonYearFactory.create(
+        profession=profession,
+        first_month=datetime.date(2026, 9, 1),
+        last_month=datetime.date(2027, 7, 1),
+    )
+    LessonYearFactory.create(
+        first_month=datetime.date(2024, 9, 1), last_month=datetime.date(2025, 7, 1)
+    )
+    client.force_login(profession.user)
+
+    response = client.get(reverse("accounts:settings"))
+
+    content = response.content.decode()
+    assert "2026-2027" in content
+    assert "2024-2025" not in content
+
+
+def test_lesson_year_create_and_overlap_refusal(client):
+    import datetime
+
+    from core.apps.accounts.models import LessonYear
+
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    created = client.post(
+        reverse("accounts:lesson_year_create"),
+        {
+            "first_month_0": "9",
+            "first_month_1": "2026",
+            "last_month_0": "7",
+            "last_month_1": "2027",
+        },
+    )
+    assert created.status_code == 302
+    lesson_year = LessonYear.objects.get(profession=profession)
+    assert lesson_year.first_month == datetime.date(2026, 9, 1)
+    assert lesson_year.last_month == datetime.date(2027, 7, 1)
+
+    overlapping = client.post(
+        reverse("accounts:lesson_year_create"),
+        {
+            "first_month_0": "7",
+            "first_month_1": "2027",
+            "last_month_0": "6",
+            "last_month_1": "2028",
+        },
+    )
+    assert overlapping.status_code == 200
+    assert "chevauche" in overlapping.content.decode()
+    assert LessonYear.objects.filter(profession=profession).count() == 1
+    assert overlapping.context["nav_section"] == "settings"
+
+
+def test_lesson_year_update_changes_the_months(client):
+    import datetime
+
+    from .factories import LessonYearFactory
+
+    lesson_year = LessonYearFactory.create()
+    client.force_login(lesson_year.profession.user)
+
+    response = client.post(
+        reverse("accounts:lesson_year_update", args=[lesson_year.pk]),
+        {
+            "first_month_0": "8",
+            "first_month_1": "2026",
+            "last_month_0": "6",
+            "last_month_1": "2027",
+        },
+    )
+
+    assert response.status_code == 302
+    lesson_year.refresh_from_db()
+    assert lesson_year.first_month == datetime.date(2026, 8, 1)
+    assert lesson_year.last_month == datetime.date(2027, 6, 1)
+
+
+def test_lesson_year_update_returns_404_for_another_professions_year(client):
+    from .factories import LessonYearFactory
+
+    foreign = LessonYearFactory.create()
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    response = client.get(reverse("accounts:lesson_year_update", args=[foreign.pk]))
+
+    assert response.status_code == 404

@@ -20,4 +20,14 @@ urlpatterns = [
     path("settings/profile/", views.profile_update_view, name="profile_update"),
     path("settings/avatar/", views.avatar_update_view, name="avatar_update"),
     path("settings/avatar/remove/", views.avatar_remove_view, name="avatar_remove"),
+    path(
+        "settings/lesson-years/new/",
+        views.lesson_year_create_view,
+        name="lesson_year_create",
+    ),
+    path(
+        "settings/lesson-years/<int:lesson_year_id>/edit/",
+        views.lesson_year_update_view,
+        name="lesson_year_update",
+    ),
 ]

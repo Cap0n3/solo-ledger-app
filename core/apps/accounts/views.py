@@ -1,14 +1,30 @@
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
+from core.utils.forms import add_service_errors
+
 from .decorators import profession_required
-from .forms import AvatarForm, LoginForm, PasswordChangeForm, ProfileForm
-from .services import user_avatar_remove, user_avatar_update, user_profile_update
+from .forms import (
+    AvatarForm,
+    LessonYearForm,
+    LoginForm,
+    PasswordChangeForm,
+    ProfileForm,
+)
+from .selectors import lesson_year_get, lesson_year_list
+from .services import (
+    lesson_year_create,
+    lesson_year_update,
+    user_avatar_remove,
+    user_avatar_update,
+    user_profile_update,
+)
 from .types import ProfessionHttpRequest
 
 
@@ -49,6 +65,7 @@ def _settings_response(
         "page_subtitle": _("Informations du compte et de l'activité"),
         "profile_form": profile_form,
         "avatar_form": avatar_form,
+        "lesson_years": lesson_year_list(profession=request.profession),
     }
     return render(request, "accounts/settings.html", context)
 
@@ -101,3 +118,60 @@ def avatar_remove_view(request: ProfessionHttpRequest) -> HttpResponse:
     user_avatar_remove(user=request.user)
     messages.success(request, _("Avatar supprimé."))
     return redirect("accounts:settings")
+
+
+@profession_required
+def lesson_year_create_view(request: ProfessionHttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = LessonYearForm(request.POST)
+        if form.is_valid():
+            try:
+                lesson_year_create(
+                    profession=request.profession,
+                    first_month=form.cleaned_data["first_month"],
+                    last_month=form.cleaned_data["last_month"],
+                )
+            except ValidationError as error:
+                add_service_errors(form, error)
+            else:
+                messages.success(request, _("Année de cours créée."))
+                return redirect("accounts:settings")
+    else:
+        form = LessonYearForm()
+    context = {
+        "page_title": _("Nouvelle année de cours"),
+        "page_subtitle": _("Paramètres"),
+        "form": form,
+    }
+    return render(request, "accounts/lesson_year_form.html", context)
+
+
+@profession_required
+def lesson_year_update_view(
+    request: ProfessionHttpRequest, lesson_year_id: int
+) -> HttpResponse:
+    lesson_year = lesson_year_get(
+        profession=request.profession, lesson_year_id=lesson_year_id
+    )
+    if request.method == "POST":
+        form = LessonYearForm(request.POST)
+        if form.is_valid():
+            try:
+                lesson_year_update(
+                    lesson_year=lesson_year,
+                    first_month=form.cleaned_data["first_month"],
+                    last_month=form.cleaned_data["last_month"],
+                )
+            except ValidationError as error:
+                add_service_errors(form, error)
+            else:
+                messages.success(request, _("Année de cours mise à jour."))
+                return redirect("accounts:settings")
+    else:
+        form = LessonYearForm.for_lesson_year(lesson_year)
+    context = {
+        "page_title": lesson_year.name,
+        "page_subtitle": _("Modifier l'année de cours"),
+        "form": form,
+    }
+    return render(request, "accounts/lesson_year_form.html", context)
