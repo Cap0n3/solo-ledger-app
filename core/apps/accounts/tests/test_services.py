@@ -94,3 +94,74 @@ def test_user_profile_update_sets_both_names():
     user.refresh_from_db()
     assert user.first_name == "Alice"
     assert user.last_name == "Martin"
+
+
+# --- Lesson years -----------------------------------------------------------
+
+
+def test_lesson_year_create_rejects_overlap_with_an_existing_year():
+    import datetime
+
+    from django.core.exceptions import ValidationError
+
+    from core.apps.accounts.services import lesson_year_create
+
+    from .factories import LessonYearFactory
+
+    existing = LessonYearFactory.create(
+        first_month=datetime.date(2026, 9, 1), last_month=datetime.date(2027, 7, 1)
+    )
+
+    with pytest.raises(ValidationError) as excinfo:
+        lesson_year_create(
+            profession=existing.profession,
+            first_month=datetime.date(2027, 7, 1),
+            last_month=datetime.date(2028, 6, 1),
+        )
+
+    assert "first_month" in excinfo.value.error_dict
+
+
+def test_lesson_year_create_allows_adjacent_years_and_other_professions():
+    import datetime
+
+    from core.apps.accounts.services import lesson_year_create
+
+    from .factories import LessonYearFactory
+
+    existing = LessonYearFactory.create(
+        first_month=datetime.date(2026, 9, 1), last_month=datetime.date(2027, 7, 1)
+    )
+
+    following = lesson_year_create(
+        profession=existing.profession,
+        first_month=datetime.date(2027, 9, 1),
+        last_month=datetime.date(2028, 7, 1),
+    )
+    elsewhere = lesson_year_create(
+        profession=ProfessionFactory.create(),
+        first_month=datetime.date(2026, 9, 1),
+        last_month=datetime.date(2027, 7, 1),
+    )
+
+    assert following.name == "2027-2028"
+    assert elsewhere.name == "2026-2027"
+
+
+def test_lesson_year_update_ignores_itself_in_the_overlap_check():
+    import datetime
+
+    from core.apps.accounts.services import lesson_year_update
+
+    from .factories import LessonYearFactory
+
+    lesson_year = LessonYearFactory.create()
+
+    updated = lesson_year_update(
+        lesson_year=lesson_year,
+        first_month=datetime.date(2026, 8, 1),
+        last_month=datetime.date(2027, 6, 1),
+    )
+
+    assert updated.name == "2026-2027"
+    assert updated.first_month == datetime.date(2026, 8, 1)
