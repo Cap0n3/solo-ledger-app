@@ -1,3 +1,5 @@
+from django.core.files.base import File
+
 from .models import Profession, User
 
 
@@ -16,6 +18,23 @@ def user_create(
     return User.objects.create_user(
         username=username, password=password, first_name=first_name, email=email
     )
+
+
+def user_avatar_update(*, user: User, avatar: File[bytes]) -> User:
+    """Replace the user's avatar. The previous file is removed from storage."""
+    if user.avatar:
+        user.avatar.delete(save=False)
+    user.avatar = avatar
+    user.save(update_fields=["avatar"])
+    return user
+
+
+def user_avatar_remove(*, user: User) -> User:
+    """Delete the avatar file and clear the field. No avatar is not an error."""
+    if user.avatar:
+        user.avatar.delete(save=False)
+        user.save(update_fields=["avatar"])
+    return user
 
 
 def profession_create(*, user: User, name: str) -> Profession:

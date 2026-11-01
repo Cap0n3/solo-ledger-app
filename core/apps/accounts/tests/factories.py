@@ -1,5 +1,9 @@
+import io
+
 import factory
+from django.core.files.uploadedfile import SimpleUploadedFile
 from factory.django import DjangoModelFactory
+from PIL import Image
 
 from core.apps.accounts.models import Profession, User
 
@@ -21,3 +25,10 @@ class ProfessionFactory(DjangoModelFactory[Profession]):
 
     user = factory.SubFactory(UserFactory)
     name = factory.Sequence(lambda n: f"Profession {n}")
+
+
+def avatar_upload(name: str = "avatar.png") -> SimpleUploadedFile:
+    """A tiny valid PNG, as a browser would upload it."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (4, 4), "white").save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")

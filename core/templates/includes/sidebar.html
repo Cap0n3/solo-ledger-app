@@ -10,12 +10,6 @@
             @click="closeSidebar()"></button>
   </div>
   {% if user.is_authenticated %}
-    <div class="app-sidebar__account">
-      <div class="fw-semibold">
-        {% blocktranslate with name=user.first_name|default:user.username %}Compte de {{ name }}{% endblocktranslate %}
-      </div>
-      <div class="small text-secondary">{% translate "Activité :" %} {{ current_profession|default:"—" }}</div>
-    </div>
     <div class="app-sidebar__section">{% translate "Espace de travail" %}</div>
     <nav class="nav flex-column app-sidebar__nav"
          aria-label="{% translate 'Menu principal' %}">
@@ -36,13 +30,5 @@
       <a class="nav-link{% if request.resolver_match.view_name == 'reports:income_statement' %} active{% endif %}"
          href="{% url 'reports:income_statement' %}">{% translate "Compte d'exploitation" %}</a>
     </nav>
-    <div class="app-sidebar__footer">
-      <a class="nav-link{% if request.resolver_match.view_name == 'accounts:settings' %} active{% endif %}"
-         href="{% url 'accounts:settings' %}">{% translate "Paramètres" %}</a>
-      <form method="post" action="{% url 'accounts:logout' %}">
-        {% csrf_token %}
-        <button type="submit" class="nav-link app-sidebar__logout">{% translate "Déconnexion" %}</button>
-      </form>
-    </div>
   {% endif %}
 </aside>

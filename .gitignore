@@ -14,6 +14,7 @@ node_modules/
 
 # Django
 staticfiles/
+media/
 core/static/dist/*
 !core/static/dist/.gitkeep
 *.sqlite3

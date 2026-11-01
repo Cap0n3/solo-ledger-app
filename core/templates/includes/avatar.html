@@ -1,0 +1,12 @@
+{% comment %}
+  Round avatar of the logged-in user: the image when set, the initial otherwise.
+  Pass size="lg" for the large version used in settings.
+{% endcomment %}
+{% if user.avatar %}
+  <img class="app-avatar{% if size %} app-avatar--{{ size }}{% endif %}"
+       src="{{ user.avatar.url }}"
+       alt="">
+{% else %}
+  <span class="app-avatar app-avatar--initial{% if size %} app-avatar--{{ size }}{% endif %}"
+        aria-hidden="true">{{ user.initial }}</span>
+{% endif %}

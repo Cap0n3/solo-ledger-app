@@ -13,6 +13,7 @@ $border-radius: 0.5rem;
 
 $sidebar-width: 272px;
 $sidebar-transition-duration: 0.25s;
+$topbar-height: 64px;
 
 .app-layout {
   display: flex;
@@ -119,13 +120,6 @@ $sidebar-transition-duration: 0.25s;
   font-weight: 700;
 }
 
-.app-sidebar__account {
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid $card-border-color;
-  border-radius: $border-radius;
-}
-
 .app-sidebar__section {
   padding: 0 0.5rem;
   margin-bottom: 0.5rem;
@@ -136,8 +130,7 @@ $sidebar-transition-duration: 0.25s;
   text-transform: uppercase;
 }
 
-.app-sidebar__nav .nav-link,
-.app-sidebar__footer .nav-link {
+.app-sidebar__nav .nav-link {
   padding: 0.5rem 1rem;
   color: $body-color;
   border-radius: $border-radius;
@@ -146,19 +139,6 @@ $sidebar-transition-duration: 0.25s;
     font-weight: 600;
     background: tint-color($primary, 90%);
   }
-}
-
-.app-sidebar__footer {
-  margin-top: auto;
-  padding-top: 0.75rem;
-  border-top: 1px solid $card-border-color;
-}
-
-.app-sidebar__logout {
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: 0;
 }
 
 .app-sidebar-toggle {
@@ -185,8 +165,108 @@ $sidebar-transition-duration: 0.25s;
 }
 
 .app-main {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
+}
+
+// Always-visible bar above the page: sidebar toggle on the left, account menu
+// and settings on the right. It stays below the mobile drawer and its backdrop.
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: $zindex-sticky;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: $topbar-height;
+  padding: 0 1.5rem;
+  background: $white;
+  border-bottom: 1px solid $card-border-color;
+
+  @include media-breakpoint-down(md) {
+    padding: 0 1rem;
+  }
+}
+
+.app-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-topbar__account {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  color: $body-color;
+  background: none;
+  border: 0;
+  border-radius: $border-radius;
+
+  &:hover {
+    background: $gray-100;
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: $focus-ring-box-shadow;
+  }
+}
+
+.app-topbar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: $secondary;
+  border-radius: $border-radius;
+
+  &:hover {
+    color: $body-color;
+    background: $gray-100;
+  }
+
+  &.active {
+    color: $primary;
+    background: tint-color($primary, 90%);
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: $focus-ring-box-shadow;
+  }
+}
+
+.app-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.app-avatar--initial {
+  font-weight: 600;
+  color: $primary;
+  background: tint-color($primary, 85%);
+}
+
+.app-avatar--lg {
+  width: 6rem;
+  height: 6rem;
+  font-size: 2rem;
+}
+
+.app-content {
+  flex: 1 1 auto;
   padding: 2rem 2.5rem;
 
   @include media-breakpoint-down(md) {
@@ -201,13 +281,6 @@ $sidebar-transition-duration: 0.25s;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.5rem;
-}
-
-.app-page-header__title {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  min-width: 0;
 }
 
 .app-page-header__actions {

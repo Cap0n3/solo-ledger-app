@@ -134,6 +134,7 @@ Always use these names. Do not invent synonyms.
 | compte d'exploitation        | `IncomeStatement`      |
 | numéro d'indépendant         | `self_employed_number` |
 | tableau de bord              | `dashboard`            |
+| avatar                       | `avatar` (`User.avatar`, image chosen in settings) |
 | activité courante            | `current profession` (`profession_current` selector) |
 
 When a new domain concept appears, add it to this table before using it.

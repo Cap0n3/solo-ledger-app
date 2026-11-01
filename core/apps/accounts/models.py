@@ -1,14 +1,38 @@
+import uuid
+from pathlib import Path
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+def user_avatar_upload_to(instance: models.Model, filename: str) -> str:
+    """Store each user's avatars in their own folder under an unguessable name.
+
+    The original file name is dropped so it never leaks into a public URL.
+    """
+    extension = Path(filename).suffix.lower()
+    return f"avatars/{instance.pk}/{uuid.uuid4().hex}{extension}"
+
+
 class User(AbstractUser):
     """Application account. Each user owns one or more professions."""
+
+    avatar = models.ImageField(_("avatar"), upload_to=user_avatar_upload_to, blank=True)
 
     class Meta:
         verbose_name = _("utilisateur")
         verbose_name_plural = _("utilisateurs")
+
+    @property
+    def display_name(self) -> str:
+        """Name shown in the interface: the first name, or the username without one."""
+        return self.first_name or self.username
+
+    @property
+    def initial(self) -> str:
+        """Letter shown in place of the avatar when none is set."""
+        return self.display_name[:1].upper()
 
 
 class Profession(models.Model):

@@ -1,11 +1,14 @@
+from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
 
 from .decorators import profession_required
-from .forms import LoginForm, PasswordChangeForm
+from .forms import AvatarForm, LoginForm, PasswordChangeForm
+from .services import user_avatar_remove, user_avatar_update
 from .types import ProfessionHttpRequest
 
 
@@ -38,8 +41,27 @@ class PasswordChangeDoneView(auth_views.PasswordChangeDoneView):
 @profession_required
 def settings_view(request: ProfessionHttpRequest) -> HttpResponse:
     """Account settings. Business settings arrive in later milestones."""
+    if request.method == "POST":
+        avatar_form = AvatarForm(request.POST, request.FILES)
+        if avatar_form.is_valid():
+            user_avatar_update(
+                user=request.user, avatar=avatar_form.cleaned_data["avatar"]
+            )
+            messages.success(request, _("Avatar mis à jour."))
+            return redirect("accounts:settings")
+    else:
+        avatar_form = AvatarForm()
     context = {
         "page_title": _("Paramètres"),
         "page_subtitle": _("Informations du compte et de l'activité"),
+        "avatar_form": avatar_form,
     }
     return render(request, "accounts/settings.html", context)
+
+
+@profession_required
+@require_POST
+def avatar_remove_view(request: ProfessionHttpRequest) -> HttpResponse:
+    user_avatar_remove(user=request.user)
+    messages.success(request, _("Avatar supprimé."))
+    return redirect("accounts:settings")

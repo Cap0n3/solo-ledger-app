@@ -26,42 +26,103 @@
       <div class="app-layout">
         {% include "includes/sidebar.html" %}
         <div class="app-sidebar-backdrop" @click="closeSidebar()"></div>
-        <main class="app-main">
-          <header class="app-page-header">
-            <div class="app-page-header__title">
-              <button type="button"
-                      class="app-sidebar-toggle"
-                      aria-controls="app-sidebar"
-                      :aria-expanded="isSidebarOpen"
-                      aria-label="{% translate 'Afficher ou masquer le menu' %}"
-                      x-ref="sidebarToggle"
-                      @click="toggleSidebar()">
-                <svg width="22"
-                     height="22"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2"
-                     stroke-linecap="round"
-                     aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h16" />
-                </svg>
-              </button>
+        <div class="app-main">
+          <header class="app-topbar">
+            <button type="button"
+                    class="app-sidebar-toggle"
+                    aria-controls="app-sidebar"
+                    :aria-expanded="isSidebarOpen"
+                    aria-label="{% translate 'Afficher ou masquer le menu' %}"
+                    x-ref="sidebarToggle"
+                    @click="toggleSidebar()">
+              <svg width="22"
+                   height="22"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   stroke-linecap="round"
+                   aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
+            {% if user.is_authenticated %}
+              <div class="app-topbar__actions">
+                <div class="dropdown">
+                  <button type="button"
+                          class="app-topbar__account"
+                          data-bs-toggle="dropdown"
+                          aria-expanded="false">
+                    {% include "includes/avatar.html" %}
+                    <span class="fw-semibold d-none d-sm-inline">{{ user.display_name }}</span>
+                    <svg class="text-secondary"
+                         width="16"
+                         height="16"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <div class="dropdown-header">
+                        <div class="fw-semibold text-body">{{ user.display_name }}</div>
+                        <div class="small">{{ user.username }}</div>
+                      </div>
+                    </li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                      <form method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item">{% translate "Déconnexion" %}</button>
+                      </form>
+                    </li>
+                  </ul>
+                </div>
+                <a class="app-topbar__icon{% if request.resolver_match.view_name == 'accounts:settings' %} active{% endif %}"
+                   href="{% url 'accounts:settings' %}"
+                   title="{% translate 'Paramètres' %}"
+                   aria-label="{% translate 'Paramètres' %}">
+                  <svg width="22"
+                       height="22"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       aria-hidden="true">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                </a>
+              </div>
+            {% endif %}
+          </header>
+          <main class="app-content">
+            <header class="app-page-header">
               <div>
                 <h1 class="h2 mb-1">{% block page_title %}{{ page_title }}{% endblock page_title %}</h1>
                 {% if page_subtitle %}<p class="text-secondary mb-0">{{ page_subtitle }}</p>{% endif %}
               </div>
-            </div>
-            <div class="app-page-header__actions">
-              {% block page_actions %}
-                {% if current_profession %}<span class="app-profession-pill">{{ current_profession }}</span>{% endif %}
-              {% endblock page_actions %}
-            </div>
-          </header>
-          {% include "includes/messages.html" %}
-          {% block content %}
-          {% endblock content %}
-        </main>
+              <div class="app-page-header__actions">
+                {% block page_actions %}
+                  {% if current_profession %}<span class="app-profession-pill">{{ current_profession }}</span>{% endif %}
+                {% endblock page_actions %}
+              </div>
+            </header>
+            {% include "includes/messages.html" %}
+            {% block content %}
+            {% endblock content %}
+          </main>
+        </div>
       </div>
     {% endblock body %}
     <script src="{% static 'dist/js/app.js' %}"></script>

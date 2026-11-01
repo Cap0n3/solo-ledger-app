@@ -1,9 +1,12 @@
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
+from core.apps.accounts import forms as accounts_forms
+from core.apps.accounts.services import user_avatar_update
 from core.apps.accounts.types import CURRENT_PROFESSION_SESSION_KEY
 
-from .factories import ProfessionFactory, UserFactory
+from .factories import ProfessionFactory, UserFactory, avatar_upload
 
 pytestmark = pytest.mark.django_db
 
@@ -110,3 +113,84 @@ def test_settings_page_shows_current_profession(client):
 
     assert response.status_code == 200
     assert "Cours de guitare" in response.content.decode()
+
+
+def test_settings_upload_sets_avatar(client):
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    response = client.post(reverse("accounts:settings"), {"avatar": avatar_upload()})
+
+    assert response.status_code == 302
+    assert response.url == reverse("accounts:settings")
+    profession.user.refresh_from_db()
+    assert str(profession.user.avatar).startswith(f"avatars/{profession.user.pk}/")
+
+
+def test_settings_rejects_file_that_is_not_an_image(client):
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+    upload = SimpleUploadedFile("notes.png", b"not an image", content_type="image/png")
+
+    response = client.post(reverse("accounts:settings"), {"avatar": upload})
+
+    assert response.status_code == 200
+    assert "avatar" in response.context["avatar_form"].errors
+    profession.user.refresh_from_db()
+    assert not profession.user.avatar
+
+
+def test_settings_rejects_image_above_size_limit(client, monkeypatch):
+    monkeypatch.setattr(accounts_forms, "AVATAR_MAX_BYTES", 10)
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    response = client.post(reverse("accounts:settings"), {"avatar": avatar_upload()})
+
+    assert response.status_code == 200
+    assert "avatar" in response.context["avatar_form"].errors
+    profession.user.refresh_from_db()
+    assert not profession.user.avatar
+
+
+def test_avatar_remove_requires_post_and_clears_avatar(client):
+    profession = ProfessionFactory.create()
+    user_avatar_update(user=profession.user, avatar=avatar_upload())
+    client.force_login(profession.user)
+
+    assert client.get(reverse("accounts:avatar_remove")).status_code == 405
+
+    response = client.post(reverse("accounts:avatar_remove"))
+
+    assert response.status_code == 302
+    profession.user.refresh_from_db()
+    assert not profession.user.avatar
+
+
+def test_avatar_upload_never_touches_another_user(client):
+    own = ProfessionFactory.create()
+    other = ProfessionFactory.create()
+    client.force_login(own.user)
+
+    client.post(reverse("accounts:settings"), {"avatar": avatar_upload()})
+
+    own.user.refresh_from_db()
+    other.user.refresh_from_db()
+    assert own.user.avatar
+    assert not other.user.avatar
+
+
+def test_topbar_shows_initial_without_avatar_and_image_with_one(client):
+    profession = ProfessionFactory.create()
+    profession.user.first_name = "[TEST] Guitare"
+    profession.user.save()
+    client.force_login(profession.user)
+
+    content = client.get(reverse("reports:dashboard")).content.decode()
+    assert "app-avatar--initial" in content
+    assert reverse("accounts:settings") in content
+
+    user_avatar_update(user=profession.user, avatar=avatar_upload())
+    content = client.get(reverse("reports:dashboard")).content.decode()
+    assert "app-avatar--initial" not in content
+    assert profession.user.avatar.url in content

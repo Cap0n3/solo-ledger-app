@@ -1,9 +1,15 @@
 from django import forms
 from django.contrib.auth import forms as auth_forms
 from django.contrib.auth import password_validation
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
 
 # Widgets carry the Bootstrap classes so templates stay free of per-field markup.
+
+AVATAR_MAX_BYTES = 2 * 1024 * 1024
+AVATAR_EXTENSIONS = ("jpg", "jpeg", "png", "webp")
 
 
 class LoginForm(auth_forms.AuthenticationForm):
@@ -53,3 +59,23 @@ class PasswordChangeForm(auth_forms.PasswordChangeForm):
             attrs={"autocomplete": "new-password", "class": "form-control"}
         ),
     )
+
+
+class AvatarForm(forms.Form):
+    avatar = forms.ImageField(
+        label=_("Image"),
+        help_text=_("JPEG, PNG ou WebP, 2 Mo au maximum."),
+        validators=[FileExtensionValidator(AVATAR_EXTENSIONS)],
+        widget=forms.FileInput(
+            attrs={
+                "class": "form-control",
+                "accept": "image/jpeg,image/png,image/webp",
+            }
+        ),
+    )
+
+    def clean_avatar(self) -> UploadedFile[bytes]:
+        avatar: UploadedFile[bytes] = self.cleaned_data["avatar"]
+        if avatar.size is not None and avatar.size > AVATAR_MAX_BYTES:
+            raise ValidationError(_("L'image dépasse 2 Mo."))
+        return avatar

@@ -100,6 +100,11 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [CORE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# User uploads (avatars). Django serves them in development only (see
+# config/urls.py); production serving belongs to the production milestone.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Bootstrap alert classes for the messages framework.
 MESSAGE_TAGS = {
     message_constants.DEBUG: "secondary",
