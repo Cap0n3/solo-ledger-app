@@ -3,7 +3,6 @@
 {% load i18n %}
 
 {% block page_actions %}
-  {{ block.super }}
   <a class="btn btn-outline-secondary"
      href="{% url 'students:student_list' %}">{% translate "Élèves" %}</a>
   <a class="btn btn-primary" href="{% url 'students:payer_create' %}">{% translate "Nouveau payeur" %}</a>

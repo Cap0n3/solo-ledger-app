@@ -3,7 +3,6 @@
 {% load i18n money %}
 
 {% block page_actions %}
-  {{ block.super }}
   <a class="btn btn-primary" href="{% url 'students:plan_create' %}">{% translate "Nouvelle formule" %}</a>
 {% endblock page_actions %}
 {% block content %}

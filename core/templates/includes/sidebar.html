@@ -2,7 +2,10 @@
 
 <aside id="app-sidebar" class="app-sidebar">
   <div class="app-sidebar__header">
-    <div class="app-sidebar__brand">{% translate "Comptabilité des cours" %}</div>
+    <div>
+      <div class="app-sidebar__brand">{% translate "Comptabilité des cours" %}</div>
+      {% if current_profession %}<div class="app-sidebar__profession">{{ current_profession }}</div>{% endif %}
+    </div>
     <button type="button"
             class="btn-close d-lg-none"
             aria-label="{% translate 'Fermer le menu' %}"
