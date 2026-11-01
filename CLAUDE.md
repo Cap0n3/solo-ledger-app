@@ -6,6 +6,9 @@ SoloLedger is a Django web app for managing the accounting and students of indep
 
 `SPECS.md` is the source of truth for features and business rules. Read it before planning any feature. If the spec is ambiguous or contradicts itself, ask before implementing. Do not guess business rules.
 
+`docs/` holds the technical documentation (architecture, domain model, decision log), written in
+French with English identifiers. Read `docs/decisions.md` before reopening a settled question.
+
 ## Stack
 
 - Python 3.14 (3.15 once Django officially supports it, from 6.1.3)
@@ -203,6 +206,9 @@ A payment received on 2026-12-28 for January 2027 is allocated to January in les
 - Within a milestone: models and their tests first, then services/selectors/views and their tests, then templates.
 - Keep migrations small and readable. Never edit an applied migration. Never squash or delete migrations without asking.
 - If something in the plan turns out to be wrong during implementation, stop and explain rather than silently changing direction.
+- A milestone is done only when `docs/` reflects the code: update `architecture.md` and `domain.md`
+  with the implementation, and add every decision taken while preparing the milestone to
+  `docs/decisions.md`, dated, with the alternative that was rejected.
 
 ## Confidential data
 

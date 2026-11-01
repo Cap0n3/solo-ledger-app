@@ -5,6 +5,8 @@ d'enseignement musical (cours de guitare, cours de chant). Chaque utilisateur g�
 activité et ne voit que ses données.
 
 La spécification fonctionnelle se trouve dans `SPECS.md`, les conventions de code dans `CLAUDE.md`.
+La documentation technique (architecture, modèle de domaine, journal des décisions) est dans
+[`docs/`](docs/README.md).
 
 ## Prérequis
 
