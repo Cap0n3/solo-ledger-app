@@ -21,3 +21,30 @@ def current_profession(request: HttpRequest) -> dict[str, Profession | None]:
             selected_profession_id=request.session.get(CURRENT_PROFESSION_SESSION_KEY),
         )
     return {"current_profession": resolved_profession}
+
+
+def _nav_section(*, app_name: str, url_name: str) -> str | None:
+    if app_name == "students":
+        return "plans" if url_name.startswith("plan_") else "students"
+    if app_name == "accounting":
+        return "expenses" if url_name.startswith("expense_") else "accounting"
+    if app_name == "bank_imports":
+        return "bank_imports"
+    if app_name == "reports":
+        return url_name
+    if app_name == "accounts":
+        is_settings_page = url_name.startswith(("settings", "lesson_year_"))
+        return "settings" if is_settings_page else None
+    return None
+
+
+def navigation(request: HttpRequest) -> dict[str, str | None]:
+    """Expose which navigation entry the current page belongs to.
+
+    Error pages have no resolver match and highlight nothing.
+    """
+    match = request.resolver_match
+    if match is None:
+        return {"nav_section": None}
+    section = _nav_section(app_name=match.app_name, url_name=match.url_name or "")
+    return {"nav_section": section}

@@ -13,21 +13,21 @@
     <div class="app-sidebar__section">{% translate "Espace de travail" %}</div>
     <nav class="nav flex-column app-sidebar__nav"
          aria-label="{% translate 'Menu principal' %}">
-      <a class="nav-link{% if request.resolver_match.view_name == 'reports:dashboard' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'dashboard' %} active{% endif %}"
          href="{% url 'reports:dashboard' %}">{% translate "Tableau de bord" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'students:student_list' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'students' %} active{% endif %}"
          href="{% url 'students:student_list' %}">{% translate "Élèves" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'students:plan_list' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'plans' %} active{% endif %}"
          href="{% url 'students:plan_list' %}">{% translate "Formules" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'accounting:ledger_entry_list' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'accounting' %} active{% endif %}"
          href="{% url 'accounting:ledger_entry_list' %}">{% translate "Comptabilité" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'accounting:expense_list' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'expenses' %} active{% endif %}"
          href="{% url 'accounting:expense_list' %}">{% translate "Dépenses" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'bank_imports:bank_statement_list' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'bank_imports' %} active{% endif %}"
          href="{% url 'bank_imports:bank_statement_list' %}">{% translate "Import bancaire" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'reports:statistics' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'statistics' %} active{% endif %}"
          href="{% url 'reports:statistics' %}">{% translate "Statistiques" %}</a>
-      <a class="nav-link{% if request.resolver_match.view_name == 'reports:income_statement' %} active{% endif %}"
+      <a class="nav-link{% if nav_section == 'income_statement' %} active{% endif %}"
          href="{% url 'reports:income_statement' %}">{% translate "Compte d'exploitation" %}</a>
     </nav>
   {% endif %}

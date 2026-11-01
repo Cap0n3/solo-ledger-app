@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% load i18n money %}
+
+{% block page_actions %}
+  {{ block.super }}
+  <a class="btn btn-primary" href="{% url 'students:plan_create' %}">{% translate "Nouvelle formule" %}</a>
+{% endblock page_actions %}
+{% block content %}
+  <div class="card">
+    <div class="card-header fw-semibold">{% translate "Liste des formules" %}</div>
+    {% if items %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light text-uppercase small">
+            <tr>
+              <th scope="col">{% translate "Formule" %}</th>
+              <th scope="col">{% translate "Type" %}</th>
+              <th scope="col" class="text-end">{% translate "Tarif" %}</th>
+              <th scope="col" class="text-end">{% translate "Attributions" %}</th>
+              <th scope="col">{% translate "Statut" %}</th>
+              <th scope="col" class="text-end">{% translate "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr{% if item.plan.is_archived %} class="text-secondary"{% endif %}>
+                <td>
+                  <div class="fw-semibold">{{ item.plan.name }}</div>
+                  {% if item.plan.description %}<div class="small text-secondary">{{ item.plan.description }}</div>{% endif %}
+                </td>
+                <td>{{ item.plan.get_kind_display }}</td>
+                <td class="text-end">
+                  {{ item.plan.price|chf }}
+                  <span class="small text-secondary">
+                    {% if item.plan.is_monthly %}
+                      {% translate "/ mois" %}
+                    {% else %}
+                      {% translate "/ cours" %}
+                    {% endif %}
+                  </span>
+                </td>
+                <td class="text-end">{{ item.assignment_count }}</td>
+                <td>
+                  {% if item.plan.is_archived %}
+                    <span class="badge text-bg-secondary">{% translate "Archivée" %}</span>
+                  {% else %}
+                    <span class="badge text-bg-success">{% translate "Active" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-2">
+                    <a class="btn btn-outline-secondary btn-sm"
+                       href="{% url 'students:plan_update' item.plan.pk %}">{% translate "Modifier" %}</a>
+                    <form method="post"
+                          action="{% url 'students:plan_archive_toggle' item.plan.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-outline-secondary btn-sm">
+                        {% if item.plan.is_archived %}
+                          {% translate "Réactiver" %}
+                        {% else %}
+                          {% translate "Archiver" %}
+                        {% endif %}
+                      </button>
+                    </form>
+                    {% if item.assignment_count == 0 %}
+                      <form method="post" action="{% url 'students:plan_delete' item.plan.pk %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm">{% translate "Supprimer" %}</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card-body text-secondary">{% translate "Aucune formule pour le moment." %}</div>
+    {% endif %}
+  </div>
+{% endblock content %}

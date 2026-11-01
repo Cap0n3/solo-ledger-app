@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Q, QuerySet
 from django.shortcuts import get_object_or_404
 
 from core.apps.accounts.models import Profession
@@ -27,6 +27,28 @@ def plan_assignable_list(
 
 def plan_get(*, profession: Profession, plan_id: int) -> Plan:
     return get_object_or_404(plan_list(profession=profession), pk=plan_id)
+
+
+@dataclass(frozen=True)
+class PlanListItem:
+    plan: Plan
+    assignment_count: int
+
+
+def plan_list_items(*, profession: Profession) -> list[PlanListItem]:
+    """Rows of the plan list with how many times each plan was assigned."""
+    count_rows = (
+        PlanAssignment.objects.filter(plan__profession=profession)
+        .values("plan_id")
+        .annotate(total=Count("pk"))
+    )
+    counts: dict[int, int] = {}
+    for row in count_rows:
+        counts[row["plan_id"]] = row["total"]
+    items: list[PlanListItem] = []
+    for plan in plan_list(profession=profession):
+        items.append(PlanListItem(plan=plan, assignment_count=counts.get(plan.pk, 0)))
+    return items
 
 
 def payer_list(*, profession: Profession) -> QuerySet[Payer]:

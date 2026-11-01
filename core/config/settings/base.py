@@ -54,6 +54,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.apps.accounts.context_processors.current_profession",
+                "core.apps.accounts.context_processors.navigation",
             ],
         },
     },

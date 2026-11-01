@@ -86,7 +86,7 @@
                     </li>
                   </ul>
                 </div>
-                <a class="app-topbar__icon{% if request.resolver_match.view_name == 'accounts:settings' %} active{% endif %}"
+                <a class="app-topbar__icon{% if nav_section == 'settings' %} active{% endif %}"
                    href="{% url 'accounts:settings' %}"
                    title="{% translate 'Paramètres' %}"
                    aria-label="{% translate 'Paramètres' %}">
