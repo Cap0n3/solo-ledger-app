@@ -1,0 +1,14 @@
+{% load i18n money %}
+
+{% if plan %}
+  {{ plan.price|chf }}
+  <span class="small text-secondary">
+    {% if plan.is_monthly %}
+      {% translate "/ mois" %}
+    {% else %}
+      {% translate "/ cours" %}
+    {% endif %}
+  </span>
+{% else %}
+  —
+{% endif %}

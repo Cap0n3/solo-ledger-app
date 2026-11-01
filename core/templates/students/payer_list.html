@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block page_actions %}
+  {{ block.super }}
+  <a class="btn btn-outline-secondary"
+     href="{% url 'students:student_list' %}">{% translate "Élèves" %}</a>
+  <a class="btn btn-primary" href="{% url 'students:payer_create' %}">{% translate "Nouveau payeur" %}</a>
+{% endblock page_actions %}
+{% block content %}
+  <div class="card">
+    <div class="card-header fw-semibold">{% translate "Liste des payeurs" %}</div>
+    {% if items %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light text-uppercase small">
+            <tr>
+              <th scope="col">{% translate "Payeur" %}</th>
+              <th scope="col">{% translate "Référence paiements" %}</th>
+              <th scope="col" class="text-end">{% translate "Élèves" %}</th>
+              <th scope="col">{% translate "Formule famille" %}</th>
+              <th scope="col" class="text-end">{% translate "Tarif" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td>
+                  <a class="fw-semibold text-decoration-none"
+                     href="{% url 'students:payer_detail' item.payer.pk %}">{{ item.payer.name }}</a>
+                  {% if item.payer.email %}<div class="small text-secondary">{{ item.payer.email }}</div>{% endif %}
+                </td>
+                <td>{{ item.payer.reference_name }}</td>
+                <td class="text-end">{{ item.student_count }}</td>
+                <td>{{ item.current_plan|default:"—" }}</td>
+                <td class="text-end">{% include "students/includes/plan_price.html" with plan=item.current_plan %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card-body text-secondary">{% translate "Aucun payeur pour le moment." %}</div>
+    {% endif %}
+  </div>
+{% endblock content %}

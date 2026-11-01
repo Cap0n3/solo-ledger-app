@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+  <div class="card form-card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% include "includes/form.html" %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">{% translate "Enregistrer" %}</button>
+          <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{% translate "Annuler" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

@@ -167,3 +167,29 @@ def student_list_items(
         current_plan = student_current_plan(student=student, month=month)
         items.append(StudentListItem(student=student, current_plan=current_plan))
     return items
+
+
+@dataclass(frozen=True)
+class PayerListItem:
+    payer: Payer
+    student_count: int
+    current_plan: Plan | None
+
+
+def payer_list_items(*, profession: Profession, month: date) -> list[PayerListItem]:
+    """Rows of the payer list with their students and family plan for `month`."""
+    payers = (
+        payer_list(profession=profession)
+        .annotate(student_total=Count("students", distinct=True))
+        .prefetch_related("plan_assignments__plan")
+    )
+    items: list[PayerListItem] = []
+    for payer in payers:
+        student_total = payer.__dict__.get("student_total", 0)
+        current_plan = payer_current_plan(payer=payer, month=month)
+        items.append(
+            PayerListItem(
+                payer=payer, student_count=int(student_total), current_plan=current_plan
+            )
+        )
+    return items

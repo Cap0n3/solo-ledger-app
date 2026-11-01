@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block page_actions %}
+  {{ block.super }}
+  <a class="btn btn-outline-secondary"
+     href="{% url 'students:payer_list' %}">{% translate "Payeurs" %}</a>
+  <a class="btn btn-primary" href="{% url 'students:student_create' %}">{% translate "Ajouter un élève" %}</a>
+{% endblock page_actions %}
+{% block content %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get"
+            action="{% url 'students:student_list' %}"
+            class="row g-2 align-items-center">
+        <div class="col-md-6">
+          <label class="visually-hidden" for="student-search">{% translate "Rechercher un élève" %}</label>
+          <input type="search"
+                 id="student-search"
+                 name="q"
+                 class="form-control"
+                 value="{{ query }}"
+                 placeholder="{% translate 'Rechercher un élève…' %}"
+                 hx-get="{% url 'students:student_list' %}"
+                 hx-trigger="keyup changed delay:300ms, search"
+                 hx-target="#student-table"
+                 hx-include="closest form"
+                 hx-push-url="true">
+        </div>
+        <div class="col-md-4">
+          <label class="visually-hidden" for="student-status">{% translate "Statut" %}</label>
+          <select id="student-status"
+                  name="status"
+                  class="form-select"
+                  hx-get="{% url 'students:student_list' %}"
+                  hx-trigger="change"
+                  hx-target="#student-table"
+                  hx-include="closest form"
+                  hx-push-url="true">
+            <option value=""
+                    {% if not status_value %}selected{% endif %}>{% translate "Actifs et en pause" %}</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}"
+                      {% if status_value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+            <option value="{{ status_filter_all }}"
+                    {% if status_value == status_filter_all %}selected{% endif %}>{% translate "Tous" %}</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-grid">
+          <button type="submit" class="btn btn-outline-secondary">{% translate "Filtrer" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="student-table">{% include "students/includes/student_table.html" %}</div>
+{% endblock content %}

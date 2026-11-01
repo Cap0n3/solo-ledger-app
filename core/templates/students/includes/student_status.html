@@ -1,0 +1,7 @@
+{% if student.status == "active" %}
+  <span class="badge text-bg-success">{{ student.get_status_display }}</span>
+{% elif student.status == "paused" %}
+  <span class="badge text-bg-warning">{{ student.get_status_display }}</span>
+{% else %}
+  <span class="badge text-bg-secondary">{{ student.get_status_display }}</span>
+{% endif %}
