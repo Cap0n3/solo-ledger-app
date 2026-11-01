@@ -157,6 +157,13 @@ When a new domain concept appears, add it to this table before using it.
 - **Comments** explain *why*, not *what*. Business rules get a short docstring referencing the rule.
 - Records that carry a price (expected payments, ledger entries) store a snapshot of the amount. Changing a plan's price never rewrites history.
 
+### Logging
+
+- Configuration lives in `core/config/settings/base.py`: everything goes to stdout for Docker, level set by `DJANGO_LOG_LEVEL` (default `INFO`).
+- Every module that logs declares `logger = logging.getLogger(__name__)` at the top, so records are named after the module (`core.apps.bank_imports.services`) and inherit the `core` logger level.
+- Log business operations in services at `INFO` (bank statement imported, payment matched, plan changed, month cancelled) and anomalies at `WARNING`. Do not log plain reads or page views.
+- Messages are in English, like the code. Reference records by id and amount, never by student or payer name, and never log raw bank rows or file contents.
+
 ### Lesson year vs fiscal year (critical)
 
 These two periods must never be mixed:

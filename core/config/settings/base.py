@@ -113,3 +113,41 @@ MESSAGE_TAGS = {
 
 # Guards `manage.py seed`: only environments that opt in may receive fake data.
 SEED_ALLOWED = False
+
+# Logging goes to stdout so Docker collects it in every environment. The level
+# of Django's and the application's own loggers comes from DJANGO_LOG_LEVEL;
+# third-party loggers only surface warnings. Loggers in `core` propagate to the
+# root handler, so a record is never written twice. Django's default
+# `mail_admins` handler is dropped: ADMINS is empty and there is no mail backend.
+LOG_LEVEL = os.environ.get("DJANGO_LOG_LEVEL", "INFO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "{asctime} {levelname} [{name}] {message}",
+            "style": "{",
+        },
+        # Keeps the runserver request lines in their usual compact form.
+        "server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "default"},
+        "server": {"class": "logging.StreamHandler", "formatter": "server"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django": {"level": LOG_LEVEL},
+        "django.server": {
+            "handlers": ["server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "core": {"level": LOG_LEVEL},
+    },
+}
