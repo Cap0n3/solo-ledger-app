@@ -172,3 +172,22 @@ normales, pas des anomalies.
 - `make seed` crée des comptes et des données ouvertement factices (préfixe `[TEST]`, e-mails
   `example.com`). La commande refuse de tourner si `SEED_ALLOWED` est faux, ce qui est le cas
   en production.
+
+### Comptes de test
+
+`make seed` crée trois comptes, définis dans `core/apps/accounts/management/commands/seed.py`.
+Ils partagent le mot de passe `sololedger` (`SEED_PASSWORD`).
+
+| Compte         | Rôle                                    | Activité         |
+|----------------|-----------------------------------------|------------------|
+| `test_guitar`  | utilisateur standard                    | Cours de guitare |
+| `test_singing` | utilisateur standard                    | Cours de chant   |
+| `test_admin`   | superuser technique (accès à `/admin/`) | aucune           |
+
+Pour se connecter depuis l'hôte : `make up`, puis <http://localhost:8000> avec `test_guitar` ou
+`test_singing`. Le service `web` lance déjà le serveur ; `make run` ne sert que dans le Dev
+Container, où il n'est pas démarré automatiquement. Les deux comptes standard servent aussi à
+vérifier à la main la séparation des données : chacun ne doit voir que sa propre activité.
+
+Un compte qui existe déjà n'est pas recréé : relancer `make seed` ne réinitialise donc pas un
+mot de passe modifié entre-temps.

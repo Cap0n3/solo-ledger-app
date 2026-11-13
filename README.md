@@ -29,6 +29,10 @@ et charge les données de test. L'application est ensuite disponible sur
 
 ### Comptes de test
 
+Pour se connecter aux données de test : démarrer la stack avec `make up`, ouvrir
+<http://localhost:8000> et utiliser l'un des comptes ci-dessous. Depuis l'hôte, `make up` suffit
+à lancer le serveur ; `make run` est réservé au Dev Container.
+
 Créés par `make seed` (mot de passe commun : `sololedger`) :
 
 | Compte         | Rôle                                   | Activité          |

@@ -7,7 +7,7 @@ l'installation et les commandes.
 
 | Document                         | Contenu                                                                                   |
 |----------------------------------|-------------------------------------------------------------------------------------------|
-| [architecture.md](architecture.md) | Couches, cycle d'une requête, séparation des données, formulaires, front, outillage      |
+| [architecture.md](architecture.md) | Couches, cycle d'une requête, séparation des données, formulaires, front, outillage, [comptes de test](architecture.md#comptes-de-test) |
 | [domain.md](domain.md)           | Modèles et relations, règles métier implémentées, année de cours et année fiscale         |
 | [decisions.md](decisions.md)     | Journal des décisions prises tranche par tranche, avec leur raison et l'alternative écartée |
 | [references/](references/)       | Wireframes de référence (le CSV bancaire d'exemple n'est pas versionné)                   |
