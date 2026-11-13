@@ -140,6 +140,8 @@ Always use these names. Do not invent synonyms.
 | jour limite de paiement      | `payment_due_day`      |
 | paiement attendu             | `ExpectedPayment`      |
 | paiement / recette           | `Payment` / `income`   |
+| recette ponctuelle           | `one-off income` (a `Payment` never allocated to a month; student optional) |
+| bon cadeau                   | `gift voucher` (a one-off income told apart by its free label; no model, no plan) |
 | écriture comptable           | `LedgerEntry`          |
 | mode de paiement             | `PaymentMethod`        |
 | dépense                      | `Expense`              |

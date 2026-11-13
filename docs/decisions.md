@@ -137,3 +137,19 @@ Prose en français, identifiants en anglais, schémas Mermaid rendus par GitHub 
 jour exigée à la fin de chaque tranche. Écartés pour l'instant : MkDocs (possible plus tard sur
 les mêmes fichiers), Sphinx (disproportionné), génération automatique de l'API (les docstrings
 suffisent).
+
+## Préparation de la tranche 2 (13 novembre 2026)
+
+**Les bons cadeaux et les cours à la carte sont des recettes ponctuelles, saisies librement.**
+Un bon cadeau est payé une fois, souvent par quelqu'un qui n'est ni élève ni payeur, et ne
+suit aucun rythme mensuel. La recette porte une date, un montant, un mode de paiement et un
+libellé libre ; elle n'est attribuée à aucun mois et ne solde jamais une mensualité ni un
+arriéré. Le lien avec un élève est facultatif : vide pour un bon acheté avant que le
+bénéficiaire ait une fiche, rempli pour un cours à la carte qui doit apparaître sur la fiche.
+Écartés : une formule « bon cadeau » (une formule sert à créer des paiements attendus, il n'y
+en a pas ici), le décompte des cours consommés sur un bon, et un type dédié pour les
+statistiques (le libellé suffit).
+
+**Un élève sans formule n'a aucun paiement attendu.**
+Le bénéficiaire d'un bon cadeau peut avoir une fiche avant de s'inscrire à une formule
+normale. Les paiements attendus commencent au mois de prise d'effet de sa première formule.

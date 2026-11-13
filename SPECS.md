@@ -128,6 +128,21 @@ Un mois annulé :
 - reste visible sur la fiche de l'élève avec le statut « annulé » ;
 - peut être rétabli si l'annulation était une erreur.
 
+### Recettes ponctuelles : cours à la carte et bons cadeaux
+
+Certaines recettes ne correspondent à aucune mensualité : un cours à la carte, ou un **bon cadeau** acheté par une personne quelconque (un proche, un ami) pour quelques cours. Le nom de l'acheteur peut n'apparaître qu'une seule fois sur un relevé et ne correspondre à aucun élève ni payeur.
+
+Ces recettes sont enregistrées comme **recettes ponctuelles**, saisies librement :
+
+- une recette ponctuelle porte une date de réception, un montant, un mode de paiement et un libellé libre (par exemple « Bon cadeau 5 cours ») ;
+- elle peut être rattachée à un élève, mais ce n'est pas obligatoire. Rattachée, elle apparaît dans les paiements de la fiche de l'élève ; un bon cadeau acheté avant que le bénéficiaire ait une fiche reste sans élève ;
+- elle n'est jamais attribuée à un mois : elle ne solde ni mensualité ni arriéré et n'entre pas dans la règle du plus ancien mois impayé ;
+- elle compte dans les recettes de l'année fiscale de sa date de réception, comme tout autre paiement.
+
+Le bon cadeau n'est pas une formule et n'a pas de type dédié : le libellé suffit à le reconnaître. L'application ne compte pas les cours consommés sur un bon.
+
+Le bénéficiaire d'un bon cadeau peut avoir une fiche élève sans formule. Un élève sans formule n'a aucun paiement attendu ; il en reçoit à partir du mois de prise d'effet de la formule qui lui est attribuée ensuite.
+
 ### Formules de cours
 
 Plusieurs formules doivent pouvoir être créées et modifiées. Elles peuvent varier selon qu'elles concernent mon activité ou celle de mon épouse. Certaines anciennes formules sont encore utilisées par des élèves et doivent donc rester disponibles.
@@ -136,7 +151,7 @@ Pour chaque formule, nous devons pouvoir modifier le nom, la description et le p
 
 La modification du prix d'une formule ne doit pas modifier les paiements attendus ni les écritures déjà enregistrés.
 
-Les formules mensuelles ont un tarif stable. Elles serviront à automatiser la création des paiements attendus et des écritures comptables. Les cours « à la carte », facturés à l'unité, seront saisis manuellement.
+Les formules mensuelles ont un tarif stable. Elles serviront à automatiser la création des paiements attendus et des écritures comptables. Les cours « à la carte », facturés à l'unité, seront saisis manuellement comme recettes ponctuelles (voir « Recettes ponctuelles »).
 
 ### Formule famille et payeurs
 
@@ -279,7 +294,9 @@ Le compte bancaire contient aussi des transactions sans rapport avec l'activité
 - Un crédit qui ne présente **aucun** signe distinctif est classé automatiquement comme **non professionnel**.
 - Un crédit qui présente des signes distinctifs sans correspondance certaine avec un élève est signalé « à vérifier ».
 
-Les transactions classées non professionnelles restent consultables dans une liste séparée. L'utilisateur peut à tout moment reclasser une transaction comme paiement d'élève, ou marquer un crédit comme non professionnel.
+Les transactions classées non professionnelles restent consultables dans une liste séparée. L'utilisateur peut à tout moment reclasser une transaction comme paiement d'élève ou comme recette ponctuelle, ou marquer un crédit comme non professionnel.
+
+Un crédit reclassé comme recette ponctuelle (par exemple un bon cadeau payé par virement) est enregistré sans recherche de correspondance avec un élève ou un payeur : l'utilisateur saisit le libellé et, s'il le souhaite, choisit un élève.
 
 Les autres éléments de la communication (par exemple un suffixe comme `26-27` ajouté par un élève) sont aléatoires et ne doivent pas être interprétés.
 
