@@ -129,7 +129,9 @@ Always use these names. Do not invent synonyms.
 | changement de formule        | `PlanAssignment`       |
 | attribution de formule       | `PlanAssignment` (target: `student` or `payer`) |
 | mois de prise d'effet        | `PlanAssignment.starts_on` (first day of month) |
-| statut de l'élève            | `Student.Status` (`active` / `paused` / `ended`) |
+| statut de l'élève            | `Student.Status` (`active` / `paused` / `ended`; `paused` is derived from an ongoing pause) |
+| pause                        | `StudentPause` (`starts_on` / `ends_on` dates; `ends_on` empty while open) |
+| avoir non attribué           | `unallocated credit` (part of a `Payment` not allocated to any month) |
 | nom de référence effectif    | `reference_name` (payer's, else own, else full name) |
 | cours à la carte             | `single_lesson`        |
 | formule famille              | `family plan` (a `Plan` assigned to a `Payer`) |
@@ -137,7 +139,7 @@ Always use these names. Do not invent synonyms.
 | arriéré                      | `arrears`              |
 | année de cours               | `LessonYear`           |
 | année fiscale                | `fiscal_year` (calendar year, `int`) |
-| jour limite de paiement      | `payment_due_day`      |
+| jour limite de paiement      | `payment_due_day` (one value per `Profession`, default 10) |
 | paiement attendu             | `ExpectedPayment`      |
 | paiement / recette           | `Payment` / `income`   |
 | recette ponctuelle           | `one-off income` (a `Payment` never allocated to a month; student optional) |
@@ -174,8 +176,11 @@ When a new domain concept appears, add it to this table before using it.
 - **Dates**: use `datetime.date` for business dates (months, due dates). A billing month is represented by the first day of that month.
 - **Comments** explain *why*, not *what*. Business rules get a short docstring referencing the rule.
 - Records that carry a price (expected payments, ledger entries) store a snapshot of the amount. Changing a plan's price never rewrites history.
-- `Student.end_date` is the billing boundary that counts; `Student.status` is informational
-  (the effect of `paused` on expected payments is decided in the payments milestone).
+- `Student.end_date` is the billing boundary that counts; `Student.status` is informational.
+  Pauses (`StudentPause`) are what suspend expected payments: no payment is expected for a
+  month lying entirely within a pause, and `paused` is derived from an ongoing pause.
+- A `Payment` targets one student, or one payer for a family plan; never several students.
+- A ledger entry exists only for money actually received or paid, never for an expected amount.
 - A payer's family plan and its students' individual plans coexist: expected payments add up.
 
 ### Logging

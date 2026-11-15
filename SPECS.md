@@ -58,6 +58,17 @@ Un montant modifié manuellement n'est plus recalculé automatiquement.
 
 Les vacances en cours d'année (automne, Noël, Pâques, etc.) ne modifient pas le montant mensuel.
 
+### Pauses
+
+Un élève peut interrompre ses cours pendant une période, puis les reprendre. Une **pause** porte une date de début et une date de fin ; la date de fin peut rester vide tant que la reprise n'est pas connue. Un élève peut avoir plusieurs pauses au fil du temps, qui ne se chevauchent pas.
+
+- Aucun paiement n'est attendu pour un mois **entièrement** compris dans une pause.
+- Un mois seulement entamé par une pause reste dû en entier, puisqu'il n'y a pas de prorata ; l'utilisateur ajuste le montant à la main si nécessaire. Exemple : pour une pause du 15 janvier au 10 mars, janvier et mars restent dus, seul février n'est pas attendu.
+- Un mois de la pause déjà payé, partiellement payé, annulé ou modifié manuellement est conservé et signalé (voir « Création des paiements attendus »).
+- Lorsqu'une pause est raccourcie, terminée ou supprimée, les paiements attendus des mois qui redeviennent dus sont créés.
+- Le statut « en pause » de l'élève n'est pas saisi à la main : l'élève est en pause lorsqu'une de ses pauses est en cours.
+- La pause d'un élève ne modifie pas la formule famille de son payeur.
+
 ### Année de cours et année fiscale
 
 L'application distingue strictement deux notions de période, qui ne doivent jamais être confondues dans la logique :
@@ -79,11 +90,30 @@ Les paiements attendus sont créés **automatiquement** par l'application :
 
 Les mois déjà payés, annulés ou modifiés manuellement ne sont jamais modifiés automatiquement. Chaque paiement attendu peut être corrigé manuellement.
 
+Règles complémentaires :
+
+- Pour un élève, les paiements attendus commencent au plus tardif des deux mois : celui de sa date de début ou celui de la prise d'effet de sa formule.
+- Pour une formule famille, les paiements attendus suivent uniquement l'attribution de la formule au payeur (premier et dernier mois), quelles que soient les dates des élèves rattachés. L'utilisateur clôture l'attribution lorsque la famille arrête.
+- Un mois qui n'appartient à aucune année de cours paramétrée n'a pas de paiement attendu ; il est créé lorsque l'année est paramétrée.
+- Les mois passés sont créés comme les autres. Lorsqu'un élève est saisi en cours d'année, ses mois déjà écoulés apparaissent donc en retard jusqu'à ce que l'utilisateur saisisse les paiements réellement reçus. Il n'existe pas de « mois de début du suivi ».
+
+**Lorsque la période se raccourcit** (date de fin saisie ou avancée, attribution retirée ou clôturée, année de cours raccourcie, pause ajoutée), les paiements attendus qui ne sont plus dus sont traités ainsi :
+
+- un mois impayé que personne n'a modifié est supprimé automatiquement ;
+- un mois payé, partiellement payé, annulé ou modifié manuellement est conservé, et l'application le signale à l'utilisateur, qui décide de la suite.
+
+Exemple : une élève a payé septembre à décembre, puis avril en avance. L'utilisateur saisit une date de fin au 31 mars. Mai, juin et juillet sont supprimés. Avril est conservé et signalé : « avril est payé alors que l'élève s'arrête en mars ».
+
 ### Attribution des paiements aux mois
 
 Un paiement n'est pas rattaché au mois de sa réception, mais au **plus ancien mois encore impayé de l'année de cours concernée**, à partir de la date de début de cours de l'élève.
 
-Un paiement reçu pendant la pause entre deux années de cours (par exemple en août, avec une année de septembre à juillet) est en principe rattaché à la nouvelle année.
+Un paiement reçu pendant la pause entre deux années de cours (par exemple en août, avec une année de septembre à juillet) est en principe rattaché à la nouvelle année. Si la nouvelle année n'est pas encore paramétrée, il reste non attribué.
+
+Un paiement concerne **un seul élève**, ou **un seul payeur** lorsqu'il règle une formule famille :
+
+- un versement unique couvrant plusieurs élèves qui ont chacun leur formule (par exemple 560 CHF pour deux enfants à 280 CHF) est enregistré comme plusieurs paiements, un par élève. À l'import bancaire, une transaction peut donc être scindée en plusieurs paiements ;
+- le paiement d'une formule famille est rattaché au payeur, jamais à l'un des élèves. La famille peut régler un mois en plusieurs versements (par exemple 210 CHF par enfant pour une formule à 420 CHF) : le premier rend le mois partiellement payé, le suivant le solde. Ces versements partiels ne sont pas signalés comme des anomalies.
 
 ### Cas non évidents : demander plutôt que deviner
 
@@ -113,9 +143,12 @@ Règles complémentaires :
 
 - Un paiement d'un montant égal à plusieurs mensualités (par exemple 560 CHF) est réparti sur autant de mois impayés, du plus ancien au plus récent.
 - Un paiement partiel est proposé pour le plus ancien mois impayé, mais signalé « à vérifier » : il n'est attribué qu'après confirmation par l'utilisateur. Le mois apparaît alors comme partiellement payé.
-- Un paiement supérieur aux montants dus est conservé comme avoir et attribué aux mois suivants de la même année de cours.
-- Un paiement en retard est signalé comme tel, sans bloquer l'attribution. Un mois est considéré en retard s'il n'est pas entièrement payé au **jour limite** du mois concerné. Ce jour limite est modifiable dans les paramètres ; sa valeur par défaut est le 10.
+- Un paiement supérieur aux montants dus est conservé comme avoir et attribué aux mois suivants de la même année de cours, par mensualités entières. Le reste inférieur à une mensualité (par exemple 20 CHF sur un versement de 300 CHF pour une formule à 280 CHF), ou ce qui dépasse la fin de l'année de cours, reste un **avoir non attribué**, visible sur la fiche, que l'utilisateur attribue lui-même. L'application ne crée jamais automatiquement un mois partiellement payé à partir d'un reste.
+- Un paiement en retard est signalé comme tel, sans bloquer l'attribution. Un mois est considéré en retard s'il n'est pas entièrement payé au **jour limite** du mois concerné. Ce jour limite est une valeur unique par activité, modifiable dans les paramètres ; sa valeur par défaut est le 10. La modifier recalcule aussi le retard des mois passés.
+- Avant le jour limite, un mois non réglé est **impayé** ; après, il est **en retard**. Une fois entièrement réglé, il est **payé**, avec la mention « payé en retard » si la date de réception dépasse le jour limite.
 - L'attribution proposée peut toujours être corrigée manuellement. Une correction manuelle n'est jamais modifiée par l'attribution automatique.
+- Lors d'une saisie manuelle, le formulaire affiche l'attribution proposée ; l'utilisateur la confirme ou la corrige en enregistrant. Le signalement « à vérifier » est réservé aux paiements issus de l'import bancaire.
+- Un paiement peut être modifié ou supprimé à tout moment. La suppression demande une confirmation et libère les mois concernés. Si le montant ou l'élève change, l'ancienne attribution est retirée et une nouvelle est proposée.
 
 ### Annulation d'un mois
 
@@ -151,7 +184,7 @@ Pour chaque formule, nous devons pouvoir modifier le nom, la description et le p
 
 La modification du prix d'une formule ne doit pas modifier les paiements attendus ni les écritures déjà enregistrés.
 
-Les formules mensuelles ont un tarif stable. Elles serviront à automatiser la création des paiements attendus et des écritures comptables. Les cours « à la carte », facturés à l'unité, seront saisis manuellement comme recettes ponctuelles (voir « Recettes ponctuelles »).
+Les formules mensuelles ont un tarif stable. Elles serviront à automatiser la création des paiements attendus. Une écriture comptable n'existe que pour de l'argent réellement reçu ou dépensé : un montant attendu n'est jamais une écriture. Les cours « à la carte », facturés à l'unité, seront saisis manuellement comme recettes ponctuelles (voir « Recettes ponctuelles »).
 
 ### Formule famille et payeurs
 
@@ -192,7 +225,7 @@ L'application pourrait comporter les sections suivantes :
 - **Tableau de bord** : résumé de la période sélectionnée, avec les montants attendus, reçus et encore dus, ainsi que les paiements à vérifier.
 - **Élèves** : liste des élèves, accès à leur fiche et fonctions d'import et d'export CSV.
 - **Formules** : gestion des formules de cours et de leurs tarifs.
-- **Comptabilité** : consultation et modification des écritures comptables.
+- **Comptabilité** : consultation et modification des écritures comptables, c'est-à-dire des recettes reçues et des dépenses payées, jamais des montants attendus.
 - **Dépenses** : saisie et consultation des dépenses, avec leur label, par exemple « Informatique » ou « Publicité ».
 - **Import bancaire** : import des relevés CSV et vérification des transactions.
 - **Statistiques** : consultation de statistiques utiles au suivi de notre activité indépendante.
@@ -215,7 +248,9 @@ Le tableau de bord doit permettre de repérer immédiatement :
 
 Chaque fiche doit présenter les informations utiles sur l'élève, son activité, sa date de début de cours et, le cas échéant, sa date de fin, sa formule actuelle et l'historique de ses changements de formule. Elle doit aussi permettre de consulter ses paiements, ses écritures comptables et, le cas échéant, son payeur et les autres élèves rattachés au même payeur.
 
-La fiche affiche, pour l'année de cours en cours, la situation mois par mois : montant attendu, paiement attribué (date et montant), statut (payé, en retard, partiellement payé, impayé, annulé). Les arriérés éventuels des années précédentes sont affichés séparément.
+La fiche affiche, pour l'année de cours en cours, la situation mois par mois : montant attendu, paiement attribué (date et montant), statut (payé, en retard, partiellement payé, impayé, annulé). Les arriérés éventuels des années précédentes sont affichés séparément, de même que les avoirs non attribués et les pauses de l'élève. Un arriéré est un mois non soldé d'une année de cours antérieure à l'année en cours.
+
+La formule famille et ses paiements attendus s'affichent sur la fiche du payeur et, en rappel, sur celle de chaque élève rattaché.
 
 ## Statistiques
 
@@ -320,7 +355,7 @@ Chaque dépense doit être associée à un label décrivant son type, par exempl
 
 ## Modes de paiement
 
-Chaque recette ou dépense doit pouvoir être associée à un mode de paiement, par exemple : virement bancaire, TWINT, espèces ou autre.
+Chaque recette ou dépense doit être associée à un mode de paiement, choisi dans une liste fixe : virement bancaire, TWINT, espèces ou autre. Cette liste n'est pas modifiable dans l'application.
 
 Les virements bancaires pourront être rapprochés des transactions importées depuis le fichier CSV. Les paiements en espèces et par TWINT devront pouvoir être saisis manuellement. Toutes les recettes et dépenses enregistrées doivent figurer dans la comptabilité et dans les totaux destinés au suivi fiscal.
 
