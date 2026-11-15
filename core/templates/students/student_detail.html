@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load i18n money %}
 
 {% block page_actions %}
   <a class="btn btn-outline-secondary"
@@ -20,7 +20,7 @@
           <dl class="row mb-0">
             <dt class="col-sm-5">{% translate "Statut" %}</dt>
             <dd class="col-sm-7">
-              {% include "students/includes/student_status.html" %}
+              {% include "students/includes/student_status.html" with status=status %}
             </dd>
             <dt class="col-sm-5">{% translate "E-mail" %}</dt>
             <dd class="col-sm-7">
@@ -120,10 +120,106 @@
     {% endif %}
     <div class="col-lg-6">
       <div class="card h-100">
-        <div class="card-header fw-semibold">{% translate "Paiements et écritures" %}</div>
-        <div class="card-body text-secondary">
-          {% translate "La situation mois par mois et les écritures comptables arriveront avec la gestion des paiements." %}
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{% translate "Pauses" %}</span>
+          <a class="btn btn-outline-primary btn-sm"
+             href="{% url 'students:student_pause_create' student.pk %}">{% translate "Ajouter une pause" %}</a>
         </div>
+        {% if pauses %}
+          <ul class="list-group list-group-flush">
+            {% for pause in pauses %}
+              <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                  {% if pause.ends_on %}
+                    {% blocktranslate trimmed with start=pause.starts_on|date:"d.m.Y" end=pause.ends_on|date:"d.m.Y" %}
+                      Du {{ start }} au {{ end }}
+                    {% endblocktranslate %}
+                  {% else %}
+                    {% blocktranslate trimmed with start=pause.starts_on|date:"d.m.Y" %}
+                      Depuis le {{ start }}, reprise non fixée
+                    {% endblocktranslate %}
+                  {% endif %}
+                </div>
+                <span class="text-nowrap">
+                  <a class="btn btn-outline-secondary btn-sm"
+                     href="{% url 'students:student_pause_update' pause.pk %}">{% translate "Modifier" %}</a>
+                  <a class="btn btn-outline-danger btn-sm"
+                     href="{% url 'students:student_pause_delete' pause.pk %}">{% translate "Supprimer" %}</a>
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="card-body text-secondary">
+            {% translate "Aucune pause. Pendant une pause, les mois entièrement couverts ne sont pas attendus." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-12">
+      {% include "accounting/includes/payment_overview.html" with payment_create_query="student="|add:student_id_text %}
+    </div>
+    {% if payer_overview and payer_overview.has_content %}
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header fw-semibold">
+            {% translate "Formule famille réglée par le payeur" %}
+            <a class="text-decoration-none"
+               href="{% url 'students:payer_detail' student.payer.pk %}">{{ student.payer.name }}</a>
+          </div>
+          <div class="card-body">
+            <p class="small text-secondary">
+              {% translate "Rappel : ces mois se gèrent sur la fiche du payeur et s'ajoutent à ceux de l'élève." %}
+            </p>
+            {% if payer_overview.lines %}
+              {% include "accounting/includes/month_table.html" with lines=payer_overview.lines is_readonly=True %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{% translate "Recettes ponctuelles" %}</span>
+          <a class="btn btn-outline-primary btn-sm"
+             href="{% url 'accounting:one_off_income_create' %}?student={{ student.pk }}">{% translate "Saisir une recette ponctuelle" %}</a>
+        </div>
+        {% if one_off_incomes %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light text-uppercase small">
+                <tr>
+                  <th scope="col">{% translate "Reçu le" %}</th>
+                  <th scope="col">{% translate "Libellé" %}</th>
+                  <th scope="col">{% translate "Mode" %}</th>
+                  <th scope="col" class="text-end">{% translate "Montant" %}</th>
+                  <th scope="col" class="text-end">{% translate "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for income in one_off_incomes %}
+                  <tr>
+                    <td class="text-nowrap">{{ income.received_on|date:"d.m.Y" }}</td>
+                    <td>{{ income.label }}</td>
+                    <td>{{ income.get_method_display }}</td>
+                    <td class="text-end text-nowrap">{{ income.amount|chf }}</td>
+                    <td class="text-end text-nowrap">
+                      <a class="btn btn-outline-secondary btn-sm"
+                         href="{% url 'accounting:one_off_income_update' income.pk %}">{% translate "Modifier" %}</a>
+                      <a class="btn btn-outline-danger btn-sm"
+                         href="{% url 'accounting:payment_delete' income.pk %}">{% translate "Supprimer" %}</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="card-body text-secondary">
+            {% translate "Aucune recette ponctuelle (cours à la carte, bon cadeau) rattachée à cet élève." %}
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>

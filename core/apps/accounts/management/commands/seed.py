@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from core.apps.accounting.seed import seed_profession_payments
 from core.apps.accounts.models import Profession, User
 from core.apps.accounts.selectors import profession_list
 from core.apps.accounts.services import profession_create, user_create
@@ -61,6 +62,7 @@ class Command(BaseCommand):
                 catalog_name=account.catalog_name,
                 stdout=self.stdout,
             )
+            seed_profession_payments(profession=profession, stdout=self.stdout)
         self._admin_get_or_create()
         self.stdout.write(
             self.style.SUCCESS(

@@ -103,6 +103,13 @@ class PayerForm(forms.Form):
         )
 
 
+# « En pause » is derived from the student's pauses and cannot be chosen.
+STORED_STATUS_CHOICES = (
+    (Student.Status.ACTIVE.value, Student.Status.ACTIVE.label),
+    (Student.Status.ENDED.value, Student.Status.ENDED.label),
+)
+
+
 class StudentForm(forms.Form):
     first_name = forms.CharField(
         label=_("Prénom"),
@@ -141,7 +148,8 @@ class StudentForm(forms.Form):
     )
     status = forms.ChoiceField(
         label=_("Statut"),
-        choices=Student.Status.choices,
+        choices=STORED_STATUS_CHOICES,
+        help_text=_("« En pause » se déduit des pauses saisies sur la fiche."),
         widget=forms.Select(attrs={"class": "form-select"}),
     )
     payer = forms.ModelChoiceField(
@@ -250,4 +258,24 @@ class PlanAssignmentEndForm(forms.Form):
     last_month = MonthField(
         label=_("Dernier mois couvert"),
         help_text=_("La formule reste en vigueur jusqu'à ce mois inclus."),
+    )
+
+
+class StudentPauseForm(forms.Form):
+    starts_on = forms.DateField(
+        label=_("Début de la pause"),
+        widget=forms.DateInput(
+            format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}
+        ),
+    )
+    ends_on = forms.DateField(
+        label=_("Fin de la pause"),
+        required=False,
+        help_text=_(
+            "Laisser vide tant que la reprise n'est pas connue. Seuls les mois "
+            "entièrement compris dans la pause ne sont pas attendus."
+        ),
+        widget=forms.DateInput(
+            format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}
+        ),
     )

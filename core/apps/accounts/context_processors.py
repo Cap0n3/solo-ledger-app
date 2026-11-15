@@ -33,7 +33,8 @@ def _nav_section(*, app_name: str, url_name: str) -> str | None:
     if app_name == "reports":
         return url_name
     if app_name == "accounts":
-        is_settings_page = url_name.startswith(("settings", "lesson_year_"))
+        settings_prefixes = ("settings", "lesson_year_", "payment_due_day_")
+        is_settings_page = url_name.startswith(settings_prefixes)
         return "settings" if is_settings_page else None
     return None
 

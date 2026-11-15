@@ -7,7 +7,13 @@ from django.db import IntegrityError, transaction
 from core.apps.accounts.tests.factories import ProfessionFactory
 from core.apps.students.models import Plan, PlanAssignment, Student
 
-from .factories import PayerFactory, PlanAssignmentFactory, PlanFactory, StudentFactory
+from .factories import (
+    PayerFactory,
+    PlanAssignmentFactory,
+    PlanFactory,
+    StudentFactory,
+    StudentPauseFactory,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -131,3 +137,41 @@ def test_plan_assignment_target_is_the_student_or_the_payer():
     assert student_assignment.target == student_assignment.student
     assert payer_assignment.target == payer_assignment.payer
     assert payer_assignment.profession == payer_assignment.payer.profession
+
+
+def test_paused_status_cannot_be_stored():
+    student = StudentFactory.create()
+    student.status = Student.Status.PAUSED
+
+    with pytest.raises(ValidationError) as excinfo:
+        student.full_clean()
+
+    assert "status" in excinfo.value.error_dict
+
+
+def test_pause_covers_only_months_lying_entirely_within_it():
+    pause = StudentPauseFactory.build(
+        starts_on=datetime.date(2027, 1, 15), ends_on=datetime.date(2027, 3, 10)
+    )
+
+    assert not pause.covers_whole_month(datetime.date(2027, 1, 1))
+    assert pause.covers_whole_month(datetime.date(2027, 2, 1))
+    assert not pause.covers_whole_month(datetime.date(2027, 3, 1))
+
+
+def test_open_pause_covers_every_later_month():
+    pause = StudentPauseFactory.build(starts_on=datetime.date(2027, 1, 1), ends_on=None)
+
+    assert pause.covers_whole_month(datetime.date(2027, 1, 1))
+    assert pause.covers_whole_month(datetime.date(2028, 6, 1))
+    assert pause.covers_day(datetime.date(2030, 1, 1))
+
+
+def test_pause_end_cannot_precede_its_start():
+    pause = StudentPauseFactory.create()
+    pause.ends_on = datetime.date(2027, 1, 1)
+
+    with pytest.raises(ValidationError) as excinfo:
+        pause.full_clean()
+
+    assert "ends_on" in excinfo.value.error_dict

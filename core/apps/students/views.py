@@ -13,6 +13,7 @@ from django.utils.cache import patch_vary_headers
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
+from core.apps.accounting import selectors as accounting_selectors
 from core.apps.accounts.decorators import profession_required
 from core.apps.accounts.types import ProfessionHttpRequest
 from core.utils.forms import add_service_errors
@@ -25,8 +26,9 @@ from .forms import (
     PlanAssignmentEndForm,
     PlanForm,
     StudentForm,
+    StudentPauseForm,
 )
-from .models import Payer, PlanAssignment, Student
+from .models import Payer, PlanAssignment, Student, StudentPause
 
 PAGE_SIZE = 25
 STATUS_FILTER_ALL = "all"
@@ -56,13 +58,12 @@ def _status_filter(value: str) -> tuple[str, tuple[Student.Status, ...]]:
 def student_list(request: ProfessionHttpRequest) -> HttpResponse:
     query = request.GET.get("q", "").strip()
     status_value, statuses = _status_filter(request.GET.get("status", ""))
+    today = timezone.localdate()
     students = selectors.student_list(
-        profession=request.profession, query=query, statuses=statuses
+        profession=request.profession, query=query, statuses=statuses, today=today
     )
     page = Paginator(students, PAGE_SIZE).get_page(request.GET.get("page"))
-    items = selectors.student_list_items(
-        students=page.object_list, month=_current_month()
-    )
+    items = selectors.student_list_items(students=page.object_list, today=today)
     filter_parameters: dict[str, str] = {}
     if query:
         filter_parameters["q"] = query
@@ -149,6 +150,16 @@ def student_detail(request: ProfessionHttpRequest, student_id: int) -> HttpRespo
             ).exclude(pk=student.pk)
         )
         payer_plan = selectors.payer_current_plan(payer=student.payer, month=month)
+    lesson_year = accounting_selectors.lesson_year_for_overview(
+        profession=request.profession,
+        lesson_year_id=request.GET.get("year"),
+        today=today,
+    )
+    payer_overview = None
+    if student.payer is not None:
+        payer_overview = accounting_selectors.payment_overview(
+            today=today, lesson_year=lesson_year, payer=student.payer
+        )
     has_past_end_date = (
         student.end_date is not None
         and student.end_date < today
@@ -158,6 +169,8 @@ def student_detail(request: ProfessionHttpRequest, student_id: int) -> HttpRespo
         "page_title": student.full_name,
         "page_subtitle": _("Fiche de l'élève"),
         "student": student,
+        "status": selectors.student_status(student=student, today=today),
+        "pauses": selectors.student_pause_list(student=student),
         "current_plan": selectors.student_current_plan(student=student, month=month),
         "assignments": assignments,
         "latest_assignment": latest_assignment,
@@ -167,6 +180,12 @@ def student_detail(request: ProfessionHttpRequest, student_id: int) -> HttpRespo
         "siblings": siblings,
         "payer_plan": payer_plan,
         "has_past_end_date": has_past_end_date,
+        "overview": accounting_selectors.payment_overview(
+            today=today, lesson_year=lesson_year, student=student
+        ),
+        "payer_overview": payer_overview,
+        "one_off_incomes": accounting_selectors.one_off_income_list(student=student),
+        "student_id_text": str(student.pk),
     }
     return render(request, "students/student_detail.html", context)
 
@@ -209,6 +228,97 @@ def student_update(request: ProfessionHttpRequest, student_id: int) -> HttpRespo
         "cancel_url": reverse("students:student_detail", args=[student.pk]),
     }
     return render(request, "students/student_form.html", context)
+
+
+# --- Pauses -----------------------------------------------------------------
+
+
+def _student_pause_response(
+    request: ProfessionHttpRequest, *, student: Student, pause: StudentPause | None
+) -> HttpResponse:
+    back_url = reverse("students:student_detail", args=[student.pk])
+    if request.method == "POST":
+        form = StudentPauseForm(request.POST)
+        if form.is_valid():
+            try:
+                if pause is None:
+                    services.student_pause_create(
+                        student=student,
+                        starts_on=form.cleaned_data["starts_on"],
+                        ends_on=form.cleaned_data["ends_on"],
+                    )
+                else:
+                    services.student_pause_update(
+                        pause=pause,
+                        starts_on=form.cleaned_data["starts_on"],
+                        ends_on=form.cleaned_data["ends_on"],
+                    )
+            except ValidationError as error:
+                add_service_errors(form, error)
+            else:
+                messages.success(request, _("Pause enregistrée."))
+                return redirect(back_url)
+    elif pause is not None:
+        form = StudentPauseForm(
+            initial={"starts_on": pause.starts_on, "ends_on": pause.ends_on}
+        )
+    else:
+        form = StudentPauseForm(initial={"starts_on": timezone.localdate()})
+    context = {
+        "page_title": student.full_name,
+        "page_subtitle": _("Pause"),
+        "form": form,
+        "intro": _(
+            "Pendant une pause, aucun paiement n'est attendu pour les mois "
+            "entièrement compris dans la pause. Un mois seulement entamé reste dû "
+            "en entier."
+        ),
+        "submit_label": _("Enregistrer la pause"),
+        "cancel_url": back_url,
+    }
+    return render(request, "form_page.html", context)
+
+
+@profession_required
+def student_pause_create(
+    request: ProfessionHttpRequest, student_id: int
+) -> HttpResponse:
+    student = selectors.student_get(
+        profession=request.profession, student_id=student_id
+    )
+    return _student_pause_response(request, student=student, pause=None)
+
+
+@profession_required
+def student_pause_update(request: ProfessionHttpRequest, pause_id: int) -> HttpResponse:
+    pause = selectors.student_pause_get(
+        profession=request.profession, pause_id=pause_id
+    )
+    return _student_pause_response(request, student=pause.student, pause=pause)
+
+
+@profession_required
+def student_pause_delete(request: ProfessionHttpRequest, pause_id: int) -> HttpResponse:
+    """Confirmation page, then deletion: the months of the pause are due again."""
+    pause = selectors.student_pause_get(
+        profession=request.profession, pause_id=pause_id
+    )
+    back_url = reverse("students:student_detail", args=[pause.student.pk])
+    if request.method == "POST":
+        services.student_pause_delete(pause=pause)
+        messages.success(request, _("Pause supprimée."))
+        return redirect(back_url)
+    context = {
+        "page_title": pause.student.full_name,
+        "page_subtitle": _("Supprimer la pause"),
+        "message": _(
+            "La pause sera supprimée : les mois qu'elle couvrait redeviennent dus "
+            "et leurs paiements attendus sont recréés."
+        ),
+        "submit_label": _("Supprimer la pause"),
+        "cancel_url": back_url,
+    }
+    return render(request, "confirm_page.html", context)
 
 
 # --- Plan assignments, shared by students and payers ------------------------
@@ -389,18 +499,31 @@ def payer_create(request: ProfessionHttpRequest) -> HttpResponse:
 @profession_required
 def payer_detail(request: ProfessionHttpRequest, payer_id: int) -> HttpResponse:
     payer = selectors.payer_get(profession=request.profession, payer_id=payer_id)
-    month = _current_month()
+    today = timezone.localdate()
+    month = month_start(today)
     assignments = list(selectors.plan_assignment_list(payer=payer))
+    students = selectors.student_list(profession=request.profession, payer=payer)
     context = {
         "page_title": payer.name,
         "page_subtitle": _("Fiche du payeur"),
         "payer": payer,
-        "students": selectors.student_list(profession=request.profession, payer=payer),
+        "student_items": selectors.student_list_items(students=students, today=today),
+        "payer_id_text": str(payer.pk),
+        "is_deletable": selectors.payer_is_deletable(payer=payer),
         "current_plan": selectors.payer_current_plan(payer=payer, month=month),
         "assignments": assignments,
         "latest_assignment": assignments[0] if assignments else None,
         "reopened_assignment": selectors.plan_assignment_reopened_by_removal(
             assignments=assignments
+        ),
+        "overview": accounting_selectors.payment_overview(
+            today=today,
+            lesson_year=accounting_selectors.lesson_year_for_overview(
+                profession=request.profession,
+                lesson_year_id=request.GET.get("year"),
+                today=today,
+            ),
+            payer=payer,
         ),
     }
     return render(request, "students/payer_detail.html", context)

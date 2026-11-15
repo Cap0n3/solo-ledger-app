@@ -17,8 +17,8 @@ core/
 ├── config/            settings (base, development, production, test), urls, wsgi/asgi
 ├── apps/
 │   ├── accounts/      User, Profession, LessonYear, décorateur et types de requête, seed
-│   ├── students/      Plan, Payer, Student, PlanAssignment
-│   ├── accounting/    écritures et dépenses (pages provisoires, tranches 2 et 4)
+│   ├── students/      Plan, Payer, Student, StudentPause, PlanAssignment
+│   ├── accounting/    ExpectedPayment, Payment, PaymentAllocation ; dépenses à la tranche 3
 │   ├── bank_imports/  relevés bancaires (page provisoire, tranche 3)
 │   └── reports/       tableau de bord, statistiques, compte d'exploitation (tranches 2 et 5)
 ├── utils/             helpers partagés : mois (months.py), champs de formulaire (forms.py)
@@ -26,6 +26,14 @@ core/
 ├── assets/            sources SCSS et JS
 └── static/dist/       assets compilés, non versionnés
 ```
+
+**Dépendances entre apps.** `accounting` connaît `students` et `accounts` (ses modèles
+pointent vers eux). En sens inverse, les services de `students` et de `accounts` appellent
+uniquement `expected_payments_sync` et `expected_payments_sync_for_profession`, après toute
+opération qui change ce qui est dû. C'est un appel explicite plutôt qu'un signal Django : on
+lit dans le service ce qu'il déclenche, et tout reste dans la même transaction. `accounting`
+n'importe jamais `students.services` ni `accounts.services`, ce qui évite les imports
+circulaires.
 
 Les settings sont découpés par environnement. `manage.py` prend `development` par défaut,
 pytest force `test` via `pyproject.toml`, et la production lit tout depuis l'environnement.

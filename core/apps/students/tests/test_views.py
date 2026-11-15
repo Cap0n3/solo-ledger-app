@@ -159,15 +159,18 @@ def test_student_list_hides_ended_students_by_default_and_filters(client):
 
     from core.apps.students.models import Student
 
-    from .factories import StudentFactory
+    from .factories import StudentFactory, StudentPauseFactory
 
     profession = ProfessionFactory.create()
     StudentFactory.create(profession=profession, first_name="Alice", last_name="Active")
-    StudentFactory.create(
+    paused = StudentFactory.create(
+        profession=profession, first_name="Paul", last_name="Pause"
+    )
+    StudentPauseFactory.create(
         profession=profession,
-        first_name="Paul",
-        last_name="Pause",
-        status=Student.Status.PAUSED,
+        student=paused,
+        starts_on=datetime.date(2020, 1, 1),
+        ends_on=None,
     )
     StudentFactory.create(
         profession=profession,
@@ -190,6 +193,13 @@ def test_student_list_hides_ended_students_by_default_and_filters(client):
     ).content.decode()
     assert "Tom Terminé" in ended_page
     assert "Alice Active" not in ended_page
+
+    paused_page = client.get(
+        reverse("students:student_list"), {"status": "paused"}
+    ).content.decode()
+    assert "Paul Pause" in paused_page
+    assert "En pause" in paused_page
+    assert "Alice Active" not in paused_page
 
     searched = client.get(
         reverse("students:student_list"), {"q": "pau", "status": "all"}
@@ -584,7 +594,7 @@ def test_payer_delete_is_refused_with_students(client):
     )
 
     assert Payer.objects.filter(pk=payer.pk).exists()
-    assert "détachez-les" in response.content.decode()
+    assert "ne peut pas être supprimé" in response.content.decode()
 
 
 def test_payer_plan_assign_offers_only_monthly_plans(client):
@@ -628,3 +638,129 @@ def test_payer_pages_return_404_for_another_professions_payer(client):
         client.post(reverse("students:payer_delete", args=[foreign.pk])).status_code
         == 404
     )
+
+
+# --- Pauses and payments on the student page --------------------------------
+
+
+def test_pause_can_be_added_edited_and_deleted_from_the_student_page(client):
+    import datetime
+
+    from core.apps.students.models import StudentPause
+
+    from .factories import StudentFactory
+
+    student = StudentFactory.create()
+    client.force_login(student.profession.user)
+
+    created = client.post(
+        reverse("students:student_pause_create", args=[student.pk]),
+        {"starts_on": "2027-01-15", "ends_on": ""},
+    )
+    assert created.status_code == 302
+    pause = StudentPause.objects.get()
+    assert pause.student == student
+    assert pause.ends_on is None
+
+    client.post(
+        reverse("students:student_pause_update", args=[pause.pk]),
+        {"starts_on": "2027-01-15", "ends_on": "2027-03-10"},
+    )
+    pause.refresh_from_db()
+    assert pause.ends_on == datetime.date(2027, 3, 10)
+
+    page = client.get(reverse("students:student_detail", args=[student.pk]))
+    assert "Du 15.01.2027 au 10.03.2027" in page.content.decode()
+
+    delete_url = reverse("students:student_pause_delete", args=[pause.pk])
+    assert client.get(delete_url).status_code == 200
+    assert StudentPause.objects.count() == 1
+    client.post(delete_url)
+    assert StudentPause.objects.count() == 0
+
+
+def test_overlapping_pause_is_refused_in_the_form(client):
+    from .factories import StudentPauseFactory
+
+    pause = StudentPauseFactory.create()
+    client.force_login(pause.profession.user)
+
+    response = client.post(
+        reverse("students:student_pause_create", args=[pause.student.pk]),
+        {"starts_on": "2027-02-01", "ends_on": ""},
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"].non_field_errors()
+
+
+def test_pause_pages_return_404_for_another_professions_pause(client):
+    from core.apps.students.models import StudentPause
+
+    from .factories import StudentPauseFactory
+
+    profession = ProfessionFactory.create()
+    foreign_pause = StudentPauseFactory.create()
+    client.force_login(profession.user)
+
+    urls = (
+        reverse("students:student_pause_create", args=[foreign_pause.student.pk]),
+        reverse("students:student_pause_update", args=[foreign_pause.pk]),
+        reverse("students:student_pause_delete", args=[foreign_pause.pk]),
+    )
+    for url in urls:
+        assert client.get(url).status_code == 404, url
+        assert client.post(url, {"starts_on": "2027-01-01"}).status_code == 404, url
+    assert StudentPause.objects.filter(pk=foreign_pause.pk).exists()
+
+
+def test_student_status_choices_no_longer_offer_paused(client):
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    response = client.get(reverse("students:student_create"))
+
+    choices = [
+        value for value, _label in response.context["form"].fields["status"].choices
+    ]
+    assert choices == ["active", "ended"]
+
+
+def test_student_page_shows_month_by_month_payments_and_family_reminder(client):
+    import datetime
+
+    from core.apps.accounts.tests.factories import LessonYearFactory
+    from core.apps.students.services import plan_assign
+
+    from .factories import PayerFactory, StudentFactory
+
+    profession = ProfessionFactory.create()
+    lesson_year = LessonYearFactory.create(profession=profession)
+    payer = PayerFactory.create(profession=profession, name="[TEST] Famille Rey")
+    student = StudentFactory.create(profession=profession, payer=payer)
+    september = datetime.date(2026, 9, 1)
+    plan_assign(
+        plan=PlanFactory.create(profession=profession, price=Decimal("280.00")),
+        starts_on=september,
+        student=student,
+    )
+    plan_assign(
+        plan=PlanFactory.create(profession=profession, price=Decimal("420.00")),
+        starts_on=september,
+        payer=payer,
+    )
+    client.force_login(profession.user)
+
+    student_page = client.get(
+        reverse("students:student_detail", args=[student.pk]),
+        {"year": lesson_year.pk},
+    )
+    payer_page = client.get(reverse("students:payer_detail", args=[payer.pk]))
+
+    overview = student_page.context["overview"]
+    assert len(overview.lines) == 11
+    assert overview.expected_total == Decimal("3080.00")
+    assert len(student_page.context["payer_overview"].lines) == 11
+    assert "Formule famille réglée par le payeur" in student_page.content.decode()
+    assert payer_page.context["overview"].expected_total == Decimal("4620.00")
+    assert not payer_page.context["is_deletable"]

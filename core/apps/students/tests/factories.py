@@ -8,7 +8,13 @@ import factory
 from factory.django import DjangoModelFactory
 
 from core.apps.accounts.tests.factories import ProfessionFactory
-from core.apps.students.models import Payer, Plan, PlanAssignment, Student
+from core.apps.students.models import (
+    Payer,
+    Plan,
+    PlanAssignment,
+    Student,
+    StudentPause,
+)
 from core.utils.months import month_start
 
 
@@ -67,3 +73,15 @@ class PlanAssignmentFactory(DjangoModelFactory[PlanAssignment]):
                 PayerFactory, profession=factory.SelfAttribute("..profession")
             ),
         )
+
+
+class StudentPauseFactory(DjangoModelFactory[StudentPause]):
+    class Meta:
+        model = StudentPause
+
+    profession = factory.SubFactory(ProfessionFactory)
+    student = factory.SubFactory(
+        StudentFactory, profession=factory.SelfAttribute("..profession")
+    )
+    starts_on = datetime.date(2027, 1, 15)
+    ends_on = datetime.date(2027, 3, 10)

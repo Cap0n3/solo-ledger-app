@@ -2,9 +2,16 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from core.apps.accounting.models import ExpectedPayment, Payment
 from core.apps.accounts.management.commands.seed import SEED_PASSWORD
 from core.apps.accounts.models import LessonYear, Profession, User
-from core.apps.students.models import Payer, Plan, PlanAssignment, Student
+from core.apps.students.models import (
+    Payer,
+    Plan,
+    PlanAssignment,
+    Student,
+    StudentPause,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -31,6 +38,17 @@ def test_seed_is_idempotent_and_creates_usable_accounts(settings):
         and student.email.endswith("@example.com")
         for student in Student.objects.all()
     )
+    assert StudentPause.objects.count() == 2
+    assert ExpectedPayment.objects.filter(profession=guitar).exists()
+    assert ExpectedPayment.objects.filter(payer__isnull=False).exists()
+    assert ExpectedPayment.objects.filter(is_cancelled=True).exists()
+    payment_count = Payment.objects.count()
+    assert payment_count > 0
+    one_off_incomes = Payment.objects.filter(kind=Payment.Kind.ONE_OFF)
+    assert one_off_incomes.filter(student__isnull=True).count() == 2
+    assert all(income.label.startswith("[TEST]") for income in one_off_incomes)
+    call_command("seed")
+    assert Payment.objects.count() == payment_count
     guitar_user = User.objects.get(username="test_guitar")
     assert guitar_user.check_password(SEED_PASSWORD)
     assert guitar_user.first_name.startswith("[TEST]")

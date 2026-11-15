@@ -1,0 +1,22 @@
+{% load i18n %}
+
+{% comment %}
+  Badge for the computed status of an expected month. Expects `line` (MonthLine).
+{% endcomment %}
+{% if line.status == "paid" %}
+  <span class="badge text-bg-success">{{ line.status_label }}</span>
+  {% if line.is_paid_late %}
+    <span class="small text-secondary">{% translate "payé en retard" %}</span>
+  {% endif %}
+{% elif line.status == "partially_paid" %}
+  <span class="badge text-bg-warning">{{ line.status_label }}</span>
+  {% if line.is_overdue %}
+    <span class="small text-danger">{% translate "en retard" %}</span>
+  {% endif %}
+{% elif line.status == "late" %}
+  <span class="badge text-bg-danger">{{ line.status_label }}</span>
+{% elif line.status == "cancelled" %}
+  <span class="badge text-bg-secondary">{{ line.status_label }}</span>
+{% else %}
+  <span class="badge text-bg-light border">{{ line.status_label }}</span>
+{% endif %}

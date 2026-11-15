@@ -21,6 +21,11 @@ urlpatterns = [
     path("settings/avatar/", views.avatar_update_view, name="avatar_update"),
     path("settings/avatar/remove/", views.avatar_remove_view, name="avatar_remove"),
     path(
+        "settings/payment-due-day/",
+        views.payment_due_day_update_view,
+        name="payment_due_day_update",
+    ),
+    path(
         "settings/lesson-years/new/",
         views.lesson_year_create_view,
         name="lesson_year_create",

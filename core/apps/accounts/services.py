@@ -3,7 +3,10 @@ from datetime import date
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import File
+from django.db import transaction
 from django.utils.translation import gettext as _
+
+from core.apps.accounting.services import expected_payments_sync_for_profession
 
 from .models import LessonYear, Profession, User
 from .selectors import lesson_year_list
@@ -81,6 +84,22 @@ def _lesson_year_validate(lesson_year: LessonYear) -> None:
         )
 
 
+def profession_payment_due_day_update(
+    *, profession: Profession, payment_due_day: int
+) -> Profession:
+    """Change the payment due day; lateness is computed, so past months follow."""
+    profession.payment_due_day = payment_due_day
+    profession.full_clean()
+    profession.save(update_fields=["payment_due_day"])
+    logger.info(
+        "Payment due day updated: profession_id=%s payment_due_day=%s",
+        profession.pk,
+        payment_due_day,
+    )
+    return profession
+
+
+@transaction.atomic
 def lesson_year_create(
     *, profession: Profession, first_month: date, last_month: date
 ) -> LessonYear:
@@ -96,9 +115,12 @@ def lesson_year_create(
         first_month,
         last_month,
     )
+    # Students who carry on get the expected payments of the new year.
+    expected_payments_sync_for_profession(profession=profession)
     return lesson_year
 
 
+@transaction.atomic
 def lesson_year_update(
     *, lesson_year: LessonYear, first_month: date, last_month: date
 ) -> LessonYear:
@@ -112,4 +134,5 @@ def lesson_year_update(
         first_month,
         last_month,
     )
+    expected_payments_sync_for_profession(profession=lesson_year.profession)
     return lesson_year

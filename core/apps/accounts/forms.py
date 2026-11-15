@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.utils.forms import MonthField
 
-from .models import LessonYear, User
+from .models import PAYMENT_DUE_DAY_MAX, LessonYear, Profession, User
 
 # Widgets carry the Bootstrap classes so templates stay free of per-field markup.
 
@@ -130,3 +130,20 @@ class LessonYearForm(forms.Form):
                 "last_month": lesson_year.last_month,
             }
         )
+
+
+class PaymentDueDayForm(forms.Form):
+    payment_due_day = forms.IntegerField(
+        label=_("Jour limite de paiement"),
+        min_value=1,
+        max_value=PAYMENT_DUE_DAY_MAX,
+        help_text=_(
+            "Un mois qui n'est pas entièrement payé ce jour-là est en retard. "
+            "Modifier ce jour recalcule aussi le retard des mois passés."
+        ),
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+
+    @classmethod
+    def for_profession(cls, profession: Profession) -> Self:
+        return cls(initial={"payment_due_day": profession.payment_due_day})

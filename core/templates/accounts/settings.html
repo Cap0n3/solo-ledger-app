@@ -94,9 +94,21 @@
       </div>
     {% endif %}
   </div>
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">{% translate "Paiements" %}</div>
+    <div class="card-body">
+      <form method="post"
+            action="{% url 'accounts:payment_due_day_update' %}"
+            class="form-card">
+        {% csrf_token %}
+        {% include "includes/form.html" with form=payment_due_day_form %}
+        <button type="submit" class="btn btn-primary">{% translate "Enregistrer" %}</button>
+      </form>
+    </div>
+  </div>
   <div class="card">
     <div class="card-body text-secondary">
-      {% translate "Les autres paramètres (jour limite de paiement, mots-clés, numéro d'indépendant) arriveront dans les prochaines versions." %}
+      {% translate "Les autres paramètres (mots-clés, numéro d'indépendant) arriveront dans les prochaines versions." %}
     </div>
   </div>
 {% endblock content %}

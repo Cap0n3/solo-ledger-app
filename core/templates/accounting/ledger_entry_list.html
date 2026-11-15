@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% load i18n money %}
+
+{% block page_actions %}
+  <a class="btn btn-primary"
+     href="{% url 'accounting:payment_create' %}">{% translate "Saisir un paiement" %}</a>
+  <a class="btn btn-outline-primary"
+     href="{% url 'accounting:one_off_income_create' %}">{% translate "Saisir une recette ponctuelle" %}</a>
+{% endblock page_actions %}
+{% block content %}
+  <div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <form method="get" class="d-flex align-items-center gap-2">
+        <label class="fw-semibold mb-0" for="fiscal-year">{% translate "Année fiscale" %}</label>
+        <select id="fiscal-year"
+                name="year"
+                class="form-select form-select-sm w-auto"
+                onchange="this.form.submit()">
+          {% for year in fiscal_years %}
+            <option value="{{ year }}" {% if year == fiscal_year %}selected{% endif %}>{{ year }}</option>
+          {% endfor %}
+        </select>
+        <noscript>
+          <button type="submit" class="btn btn-outline-secondary btn-sm">{% translate "Afficher" %}</button>
+        </noscript>
+      </form>
+      <div>
+        <span class="text-secondary">{% translate "Total des recettes :" %}</span>
+        <span class="fw-semibold">{{ income_total|chf }}</span>
+      </div>
+    </div>
+    {% if entries %}
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light text-uppercase small">
+            <tr>
+              <th scope="col">{% translate "Reçu le" %}</th>
+              <th scope="col">{% translate "De" %}</th>
+              <th scope="col">{% translate "Objet" %}</th>
+              <th scope="col">{% translate "Mode" %}</th>
+              <th scope="col" class="text-end">{% translate "Montant" %}</th>
+              <th scope="col" class="text-end">{% translate "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              {% with payment=entry.payment %}
+                <tr>
+                  <td class="text-nowrap">{{ entry.entry_date|date:"d.m.Y" }}</td>
+                  <td>
+                    {% if payment.student %}
+                      <a class="text-decoration-none"
+                         href="{% url 'students:student_detail' payment.student.pk %}">{{ payment.student.full_name }}</a>
+                    {% elif payment.payer %}
+                      <a class="text-decoration-none"
+                         href="{% url 'students:payer_detail' payment.payer.pk %}">{{ payment.payer.name }}</a>
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if payment.is_one_off %}
+                      {{ payment.label }}
+                      <span class="badge text-bg-light border">{% translate "Ponctuelle" %}</span>
+                    {% else %}
+                      {% for allocation in payment.allocations.all %}
+                        <span class="text-nowrap">{{ allocation.expected_payment.month|date:"M Y" }}{% if not forloop.last %},{% endif %}</span>
+                      {% empty %}
+                        <span class="text-secondary">{% translate "Avoir non attribué" %}</span>
+                      {% endfor %}
+                    {% endif %}
+                  </td>
+                  <td>{{ payment.get_method_display }}</td>
+                  <td class="text-end text-nowrap fw-semibold">{{ entry.amount|chf }}</td>
+                  <td class="text-end text-nowrap">
+                    <a class="btn btn-outline-secondary btn-sm"
+                       href="{% url 'accounting:payment_update' payment.pk %}">{% translate "Modifier" %}</a>
+                    <a class="btn btn-outline-danger btn-sm"
+                       href="{% url 'accounting:payment_delete' payment.pk %}">{% translate "Supprimer" %}</a>
+                  </td>
+                </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card-body text-secondary">
+        {% blocktranslate trimmed %}
+          Aucune recette enregistrée pour {{ fiscal_year }}.
+        {% endblocktranslate %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock content %}

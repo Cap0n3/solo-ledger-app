@@ -153,3 +153,101 @@ statistiques (le libellé suffit).
 **Un élève sans formule n'a aucun paiement attendu.**
 Le bénéficiaire d'un bon cadeau peut avoir une fiche avant de s'inscrire à une formule
 normale. Les paiements attendus commencent au mois de prise d'effet de sa première formule.
+
+**Les pauses ont des dates de début et de fin ; elles suspendent les paiements attendus.**
+Un mois entièrement compris dans une pause n'est pas attendu ; un mois seulement entamé reste
+dû en entier, faute de prorata. Un élève peut avoir plusieurs pauses, la dernière pouvant
+rester ouverte. Le statut « en pause » devient dérivé d'une pause en cours et n'est plus saisi
+à la main. Écarté : un statut purement informatif, l'utilisateur annulant chaque mois de la
+pause un par un.
+
+**Pas de « mois de début du suivi ».**
+Un élève saisi en cours d'année a ses mois écoulés créés comme les autres ; l'utilisateur
+saisit les paiements réellement reçus. Écarté : un mois par activité avant lequel rien n'est
+attendu, qui évitait le rattrapage mais laissait les recettes de l'année fiscale incomplètes.
+
+**Quand la période se raccourcit, seuls les mois intacts sont supprimés.**
+Un paiement attendu impayé et jamais modifié est une donnée calculée : il est supprimé. Un
+mois payé, partiellement payé, annulé ou modifié à la main est conservé et signalé à
+l'utilisateur. Écarté : tout conserver (la fiche resterait pleine de mois non dus) et tout
+supprimer (perte de saisies de l'utilisateur).
+
+**La formule famille suit l'attribution au payeur, pas les dates des élèves.**
+Le payeur n'a pas de date de début ; l'utilisateur clôture l'attribution quand la famille
+arrête. Écarté : déduire la période des dates des élèves rattachés.
+
+**Un paiement vise un seul élève, ou un seul payeur pour une formule famille.**
+Un versement couvrant plusieurs élèves à formules individuelles est scindé en un paiement par
+élève. Une formule famille peut être réglée en plusieurs versements sans que chacun soit
+signalé comme anomalie. Écarté : un paiement réparti sur plusieurs élèves.
+
+**« En retard » décrit un mois non réglé après le jour limite.**
+Avant le jour limite le mois est impayé, après il est en retard ; une fois réglé il est payé,
+avec la mention « payé en retard » si la réception dépasse le jour limite. Le jour limite est
+une valeur unique par activité (10 par défaut) ; la modifier recalcule le retard des mois
+passés. Écarté : un jour limite par année de cours.
+
+**Le reste d'un paiement trop élevé reste un avoir non attribué.**
+Les mensualités entières sont attribuées aux mois suivants de la même année ; le reste, ou ce
+qui dépasse la fin de l'année, attend une attribution manuelle. Écarté : créer
+automatiquement un mois partiellement payé avec le reste.
+
+**La saisie manuelle se confirme dans le formulaire, sans file « à vérifier ».**
+Le formulaire montre l'attribution proposée, que l'utilisateur confirme ou corrige. La file
+« à vérifier » est réservée à l'import bancaire.
+
+**Un paiement peut être supprimé, avec confirmation.**
+La suppression libère les mois concernés ; changer le montant ou l'élève retire l'ancienne
+attribution et en propose une nouvelle. Écarté : interdire la suppression et n'autoriser que
+la correction.
+
+**Une écriture comptable n'existe que pour de l'argent réellement reçu ou dépensé.**
+La page Comptabilité ne liste jamais de montants attendus. Écarté : créer une écriture par
+mensualité attendue.
+
+**Les modes de paiement forment une liste fixe.**
+Virement bancaire, TWINT, espèces, autre. Écarté : une liste gérable dans les paramètres,
+comme les labels de dépense.
+
+## Tranche 2, paiements attendus et recettes (13 novembre 2026)
+
+**Pas de table d'écritures comptables.**
+`LedgerEntry` est une dataclass lue depuis les paiements (et les dépenses à la tranche 3).
+Écartée : une table `LedgerEntry` alimentée à chaque paiement, qui dupliquait les montants et
+obligeait à garder deux enregistrements synchronisés.
+
+**Le statut d'un mois est calculé, seule l'annulation est stockée.**
+Payé, partiellement payé, impayé et en retard dépendent des attributions, du jour limite et
+de la date du jour. Écarté : un champ `status` mis à jour par les services, qu'il aurait fallu
+recalculer chaque nuit pour le retard et à chaque changement du jour limite.
+
+**`Student.status` ne stocke plus que `active` ou `ended`.**
+« En pause » dépend de la date du jour : il est calculé par `student_status`. Une migration
+de données a repassé les élèves `paused` à `active`, sans inventer de pause dont les dates
+n'avaient jamais été saisies. Écarté : un statut `paused` écrit par les services de pause,
+faux dès qu'une pause programmée commence ou se termine sans autre action.
+
+**Le jour limite va de 1 à 28.**
+Il existe ainsi dans tous les mois. Écarté : accepter 29 à 31 et ramener au dernier jour du
+mois.
+
+**La synchronisation des paiements attendus est un appel explicite, pas un signal.**
+Les services de `students` et `accounts` appellent `expected_payments_sync`. Écartés : les
+signaux `post_save` (effets invisibles à la lecture du service) et une régénération à la
+lecture des pages (une lecture ne doit rien écrire).
+
+**Un mois conservé alors qu'il n'est plus dû porte `is_due=False`.**
+Il sort des totaux, des arriérés et des propositions d'attribution, et la fiche l'affiche dans
+un encadré. Si la période s'allonge à nouveau, il redevient dû. Écarté : recalculer ce
+drapeau à chaque affichage.
+
+**Le formulaire de paiement confirme l'attribution sur la même page.**
+On saisit le paiement, les mois ouverts s'affichent avec la proposition, on enregistre. Un
+jeton caché (`proposed_for`) identifie ce pour quoi la proposition a été faite : si l'élève,
+le montant ou la date changent avant l'enregistrement, une nouvelle proposition est montrée
+au lieu d'enregistrer des parts périmées. HTMX rafraîchit le tableau seul ; sans JavaScript,
+un bouton recharge la page. Écarté : un assistant en deux pages.
+
+**Supprimer un paiement ou une pause passe par une page de confirmation.**
+Aucun JavaScript n'est requis et la page liste les mois concernés. Écartée : une fenêtre
+modale par ligne de tableau.

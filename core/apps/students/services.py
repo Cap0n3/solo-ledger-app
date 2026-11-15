@@ -6,14 +6,17 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _
 
+from core.apps.accounting.services import expected_payments_sync
 from core.apps.accounts.models import Profession
 from core.utils.months import month_add, month_start, validate_month_start
 
-from .models import Payer, Plan, PlanAssignment, Student
+from .models import Payer, Plan, PlanAssignment, Student, StudentPause
 from .selectors import (
+    payer_is_deletable,
     plan_assignment_latest,
     plan_assignment_list,
     plan_assignment_reopened_by_removal,
+    student_pause_list,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,7 +82,8 @@ def plan_unarchive(*, plan: Plan) -> Plan:
 @transaction.atomic
 def plan_delete(*, plan: Plan) -> None:
     """Delete a plan that was never assigned; assigned plans are archived instead."""
-    if plan.assignments.exists():
+    # A month kept after its assignment was removed still refers to the plan.
+    if plan.assignments.exists() or plan.expected_payments.exists():
         raise ValidationError(
             _("Cette formule a déjà été attribuée : archivez-la plutôt."),
             code="plan_assigned",
@@ -137,9 +141,12 @@ def payer_update(
 
 @transaction.atomic
 def payer_delete(*, payer: Payer) -> None:
-    if payer.students.exists() or payer.plan_assignments.exists():
+    if not payer_is_deletable(payer=payer):
         raise ValidationError(
-            _("Ce payeur a encore des élèves ou des formules : détachez-les d'abord."),
+            _(
+                "Ce payeur a encore des élèves, des formules ou des paiements : "
+                "il ne peut pas être supprimé."
+            ),
             code="payer_in_use",
         )
     payer_id = payer.pk
@@ -195,6 +202,7 @@ def student_create(
     return student
 
 
+@transaction.atomic
 def student_update(
     *,
     student: Student,
@@ -209,7 +217,10 @@ def student_update(
     payment_reference_name: str,
     payer: Payer | None,
 ) -> Student:
-    """Update a student. Dates cannot move past existing plan assignments."""
+    """Update a student. Dates cannot move past existing plan assignments.
+
+    Expected payments follow the new dates: see `expected_payments_sync`.
+    """
     assignments = list(plan_assignment_list(student=student))
     if assignments:
         earliest_start = min(assignment.starts_on for assignment in assignments)
@@ -249,7 +260,82 @@ def student_update(
         start_date,
         end_date,
     )
+    expected_payments_sync(student=student)
     return student
+
+
+# --- Pauses -----------------------------------------------------------------
+
+
+def _student_pause_validate(pause: StudentPause) -> None:
+    """Model rules plus the cross-record rule: pauses of a student never overlap."""
+    pause.full_clean()
+    for other in student_pause_list(student=pause.student):
+        if other.pk == pause.pk:
+            continue
+        starts_before_other_ends = (
+            other.ends_on is None or pause.starts_on <= other.ends_on
+        )
+        ends_after_other_starts = (
+            pause.ends_on is None or pause.ends_on >= other.starts_on
+        )
+        if starts_before_other_ends and ends_after_other_starts:
+            raise ValidationError(
+                _("Cette pause chevauche une autre pause de l'élève."),
+                code="overlap",
+            )
+
+
+@transaction.atomic
+def student_pause_create(
+    *, student: Student, starts_on: date, ends_on: date | None
+) -> StudentPause:
+    """Record a pause; months lying entirely within it are no longer expected."""
+    pause = StudentPause(
+        profession=student.profession,
+        student=student,
+        starts_on=starts_on,
+        ends_on=ends_on,
+    )
+    _student_pause_validate(pause)
+    pause.save()
+    logger.info(
+        "Student pause created: pause_id=%s student_id=%s starts_on=%s ends_on=%s",
+        pause.pk,
+        student.pk,
+        starts_on,
+        ends_on,
+    )
+    expected_payments_sync(student=student)
+    return pause
+
+
+@transaction.atomic
+def student_pause_update(
+    *, pause: StudentPause, starts_on: date, ends_on: date | None
+) -> StudentPause:
+    """Correct or end a pause; months that are due again are created."""
+    pause.starts_on = starts_on
+    pause.ends_on = ends_on
+    _student_pause_validate(pause)
+    pause.save()
+    logger.info(
+        "Student pause updated: pause_id=%s starts_on=%s ends_on=%s",
+        pause.pk,
+        starts_on,
+        ends_on,
+    )
+    expected_payments_sync(student=pause.student)
+    return pause
+
+
+@transaction.atomic
+def student_pause_delete(*, pause: StudentPause) -> None:
+    student = pause.student
+    pause_id = pause.pk
+    pause.delete()
+    logger.info("Student pause deleted: pause_id=%s", pause_id)
+    expected_payments_sync(student=student)
 
 
 # --- Plan assignments -------------------------------------------------------
@@ -309,6 +395,7 @@ def plan_assign(
                 plan.pk,
                 starts_on,
             )
+            expected_payments_sync(student=student, payer=payer)
             return latest
         if latest.starts_on > starts_on:
             raise ValidationError(
@@ -344,9 +431,11 @@ def plan_assign(
         assignment.payer_id,
         starts_on,
     )
+    expected_payments_sync(student=student, payer=payer)
     return assignment
 
 
+@transaction.atomic
 def plan_assignment_end(
     *, assignment: PlanAssignment, last_month: date
 ) -> PlanAssignment:
@@ -372,6 +461,7 @@ def plan_assignment_end(
     logger.info(
         "Plan assignment ended: assignment_id=%s ends_on=%s", assignment.pk, last_month
     )
+    expected_payments_sync(student=assignment.student, payer=assignment.payer)
     return assignment
 
 
@@ -398,3 +488,4 @@ def plan_assignment_remove_latest(
         reopened.ends_on = None
         reopened.save(update_fields=["ends_on"])
         logger.info("Plan assignment reopened: assignment_id=%s", reopened.pk)
+    expected_payments_sync(student=student, payer=payer)

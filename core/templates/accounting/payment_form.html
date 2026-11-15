@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% load i18n money %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-body">
+      {# HTMX refreshes the allocation table alone when the payment changes; #}
+      {# without JavaScript the « Proposer l'attribution » button reloads the page. #}
+      <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger" role="alert">
+            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+          </div>
+        {% endif %}
+        <div class="row g-3"
+             hx-post="{{ request.path }}"
+             hx-trigger="change"
+             hx-include="closest form"
+             hx-target="#allocation-section"
+             hx-select="#allocation-section"
+             hx-swap="outerHTML">
+          {% for field in form.visible_fields %}
+            <div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}">
+              <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+              {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div id="allocation-section" class="mt-4">
+          <input type="hidden" name="proposed_for" value="{{ proposed_for }}">
+          {% if allocation_form %}
+            <h2 class="fs-6 fw-semibold">{% translate "Attribution aux mois" %}</h2>
+            {% if is_proposal_refreshed %}
+              <div class="alert alert-info" role="alert">
+                {% translate "Le paiement a changé : vérifiez l'attribution proposée, puis enregistrez." %}
+              </div>
+            {% endif %}
+            {% if proposal %}
+              {% for warning in proposal.warnings %}
+                <div class="alert alert-warning py-2" role="alert">{{ warning.label }}</div>
+              {% endfor %}
+            {% endif %}
+            {% if allocation_form.non_field_errors %}
+              <div class="alert alert-danger" role="alert">
+                {% for error in allocation_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+              </div>
+            {% endif %}
+            {% if allocation_rows %}
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead class="table-light text-uppercase small">
+                    <tr>
+                      <th scope="col">{% translate "Mois" %}</th>
+                      <th scope="col" class="text-end">{% translate "Attendu" %}</th>
+                      <th scope="col" class="text-end">{% translate "Reste dû" %}</th>
+                      <th scope="col" class="text-end">{% translate "Part de ce paiement (CHF)" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in allocation_rows %}
+                      <tr>
+                        <td class="text-nowrap">
+                          <label for="{{ row.field.id_for_label }}"
+                                 class="mb-0">{{ row.month.expected_payment.month|date:"F Y" }}</label>
+                          {% if row.is_arrear %}
+                            <span class="badge text-bg-danger">{% translate "Arriéré" %}</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">{{ row.month.expected_payment.amount|chf }}</td>
+                        <td class="text-end text-nowrap">{{ row.month.remaining|chf }}</td>
+                        <td class="text-end">
+                          {{ row.field }}
+                          {% for error in row.field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <p class="form-text">
+                {% translate "Laissez vide les mois que ce paiement ne règle pas. Ce qui n'est pas attribué reste un avoir, visible sur la fiche." %}
+              </p>
+            {% else %}
+              <p class="text-secondary">
+                {% translate "Aucun mois n'est dû : le montant restera un avoir non attribué." %}
+              </p>
+            {% endif %}
+          {% else %}
+            <p class="text-secondary mb-0">
+              {% translate "Saisissez le paiement : l'application proposera ensuite les mois qu'il règle." %}
+            </p>
+          {% endif %}
+          {# The buttons live in the refreshed section: saving appears with the table. #}
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            {% if allocation_form %}
+              <button type="submit"
+                      name="action"
+                      value="{{ action_save }}"
+                      class="btn btn-primary">{% translate "Enregistrer le paiement" %}</button>
+              <button type="submit"
+                      name="action"
+                      value="propose"
+                      class="btn btn-outline-primary">{% translate "Proposer à nouveau l'attribution" %}</button>
+            {% else %}
+              <button type="submit"
+                      name="action"
+                      value="propose"
+                      class="btn btn-primary">{% translate "Proposer l'attribution" %}</button>
+            {% endif %}
+            <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{% translate "Annuler" %}</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

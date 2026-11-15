@@ -15,12 +15,14 @@ from .forms import (
     LessonYearForm,
     LoginForm,
     PasswordChangeForm,
+    PaymentDueDayForm,
     ProfileForm,
 )
 from .selectors import lesson_year_get, lesson_year_list
 from .services import (
     lesson_year_create,
     lesson_year_update,
+    profession_payment_due_day_update,
     user_avatar_remove,
     user_avatar_update,
     user_profile_update,
@@ -59,8 +61,12 @@ def _settings_response(
     *,
     profile_form: ProfileForm,
     avatar_form: AvatarForm,
+    payment_due_day_form: PaymentDueDayForm | None = None,
 ) -> HttpResponse:
+    if payment_due_day_form is None:
+        payment_due_day_form = PaymentDueDayForm.for_profession(request.profession)
     context = {
+        "payment_due_day_form": payment_due_day_form,
         "page_title": _("Paramètres"),
         "page_subtitle": _("Informations du compte et de l'activité"),
         "profile_form": profile_form,
@@ -118,6 +124,25 @@ def avatar_remove_view(request: ProfessionHttpRequest) -> HttpResponse:
     user_avatar_remove(user=request.user)
     messages.success(request, _("Avatar supprimé."))
     return redirect("accounts:settings")
+
+
+@profession_required
+@require_POST
+def payment_due_day_update_view(request: ProfessionHttpRequest) -> HttpResponse:
+    payment_due_day_form = PaymentDueDayForm(request.POST)
+    if payment_due_day_form.is_valid():
+        profession_payment_due_day_update(
+            profession=request.profession,
+            payment_due_day=payment_due_day_form.cleaned_data["payment_due_day"],
+        )
+        messages.success(request, _("Jour limite de paiement mis à jour."))
+        return redirect("accounts:settings")
+    return _settings_response(
+        request,
+        profile_form=ProfileForm.for_user(request.user),
+        avatar_form=AvatarForm(),
+        payment_due_day_form=payment_due_day_form,
+    )
 
 
 @profession_required

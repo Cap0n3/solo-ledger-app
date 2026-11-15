@@ -1,0 +1,98 @@
+{% load i18n money %}
+
+{% comment %}
+  Payment situation of a student or a payer. Expects `overview`
+  (PaymentOverview) and `payment_create_query` (e.g. "student=12") used to
+  prefill the payment form.
+{% endcomment %}
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="fw-semibold">{% translate "Paiements" %}</span>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      {% if overview.lesson_years %}
+        <form method="get" class="d-flex align-items-center gap-2">
+          <label class="small text-secondary mb-0"
+                 for="overview-year">{% translate "Année de cours" %}</label>
+          <select id="overview-year"
+                  name="year"
+                  class="form-select form-select-sm w-auto"
+                  onchange="this.form.submit()">
+            {% for lesson_year in overview.lesson_years %}
+              <option value="{{ lesson_year.pk }}"
+                      {% if overview.lesson_year and lesson_year.pk == overview.lesson_year.pk %}selected{% endif %}>
+                {{ lesson_year.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <noscript>
+            <button type="submit" class="btn btn-outline-secondary btn-sm">{% translate "Afficher" %}</button>
+          </noscript>
+        </form>
+      {% endif %}
+      <a class="btn btn-primary btn-sm"
+         href="{% url 'accounting:payment_create' %}?{{ payment_create_query }}">{% translate "Saisir un paiement" %}</a>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if overview.no_longer_due %}
+      <div class="alert alert-warning" role="alert">
+        <div class="fw-semibold mb-1">{% translate "Mois conservés alors qu'ils ne sont plus dus" %}</div>
+        <p class="small mb-2">
+          {% translate "Ces mois ne correspondent plus aux dates, aux pauses ou à la formule, mais ils ont été payés, annulés ou modifiés à la main. À vous de décider : déplacer ou supprimer le paiement, ou les laisser tels quels." %}
+        </p>
+        {% include "accounting/includes/month_table.html" with lines=overview.no_longer_due %}
+      </div>
+    {% endif %}
+    {% if overview.arrears %}
+      <div class="mb-4">
+        <h3 class="fs-6 fw-semibold text-danger">{% translate "Arriérés des années précédentes" %}</h3>
+        {% include "accounting/includes/month_table.html" with lines=overview.arrears %}
+      </div>
+    {% endif %}
+    {% if overview.lines %}
+      <div class="d-flex flex-wrap gap-4 mb-3">
+        <div>
+          <div class="text-secondary small">{% translate "Attendu" %}</div>
+          <div class="fw-semibold">{{ overview.expected_total|chf }}</div>
+        </div>
+        <div>
+          <div class="text-secondary small">{% translate "Reçu" %}</div>
+          <div class="fw-semibold">{{ overview.allocated_total|chf }}</div>
+        </div>
+        <div>
+          <div class="text-secondary small">{% translate "Restant dû" %}</div>
+          <div class="fw-semibold">{{ overview.remaining_total|chf }}</div>
+        </div>
+      </div>
+      {% include "accounting/includes/month_table.html" with lines=overview.lines %}
+    {% elif not overview.lesson_year %}
+      <p class="text-secondary mb-0">
+        {% translate "Aucune année de cours n'est paramétrée : ajoutez-en une dans les paramètres pour créer les paiements attendus." %}
+      </p>
+    {% else %}
+      <p class="text-secondary mb-0">
+        {% translate "Aucun paiement attendu pour cette année de cours : aucune formule mensuelle ne s'applique." %}
+      </p>
+    {% endif %}
+    {% if overview.credits %}
+      <div class="mt-4">
+        <h3 class="fs-6 fw-semibold">{% translate "Avoirs non attribués" %}</h3>
+        <ul class="list-unstyled mb-0">
+          {% for credit in overview.credits %}
+            <li>
+              {{ credit.amount|chf }}
+              <span class="text-secondary">
+                {% blocktranslate trimmed with day=credit.payment.received_on|date:"d.m.Y" amount=credit.payment.amount|chf %}
+                  sur le paiement de {{ amount }} reçu le {{ day }}
+                {% endblocktranslate %}
+              </span>
+              ·
+              <a class="text-decoration-none"
+                 href="{% url 'accounting:payment_update' credit.payment.pk %}">{% translate "Attribuer" %}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</div>

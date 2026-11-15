@@ -2,13 +2,13 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, Exists, OuterRef, Q, QuerySet
 from django.shortcuts import get_object_or_404
 
 from core.apps.accounts.models import Profession
 from core.utils.months import month_add, month_start
 
-from .models import Payer, Plan, PlanAssignment, Student
+from .models import Payer, Plan, PlanAssignment, Student, StudentPause
 
 
 def plan_list(*, profession: Profession) -> QuerySet[Plan]:
@@ -59,25 +59,53 @@ def payer_get(*, profession: Profession, payer_id: int) -> Payer:
     return get_object_or_404(payer_list(profession=profession), pk=payer_id)
 
 
+def payer_is_deletable(*, payer: Payer) -> bool:
+    """A payer can go only while nothing refers to it: students, plans, payments."""
+    if payer.students.exists() or payer.plan_assignments.exists():
+        return False
+    return not (payer.expected_payments.exists() or payer.payments.exists())
+
+
 def student_list(
     *,
     profession: Profession,
     query: str = "",
     statuses: Iterable[Student.Status] = (),
     payer: Payer | None = None,
+    today: date | None = None,
 ) -> QuerySet[Student]:
     """Students of the profession, optionally searched and filtered.
 
     Every word of `query` must match one of the name, e-mail or reference fields.
+    Filtering by status needs `today`: « en pause » is not stored, a student is
+    paused while one of their pauses is ongoing, and then no longer « active ».
     """
     students = (
         Student.objects.filter(profession=profession)
         .select_related("payer")
-        .prefetch_related("plan_assignments__plan")
+        .prefetch_related("plan_assignments__plan", "pauses")
     )
     status_list = list(statuses)
     if status_list:
-        students = students.filter(status__in=status_list)
+        if today is None:
+            raise ValueError("Filtering students by status requires `today`.")
+        ongoing_pauses = StudentPause.objects.filter(
+            Q(ends_on__isnull=True) | Q(ends_on__gte=today),
+            student=OuterRef("pk"),
+            starts_on__lte=today,
+        )
+        is_ended = Q(status=Student.Status.ENDED)
+        has_ongoing_pause = Q(Exists(ongoing_pauses))
+        is_paused = ~is_ended & has_ongoing_pause
+        is_active = ~is_ended & ~has_ongoing_pause
+        status_filter = Q()
+        if Student.Status.ENDED in status_list:
+            status_filter |= is_ended
+        if Student.Status.PAUSED in status_list:
+            status_filter |= is_paused
+        if Student.Status.ACTIVE in status_list:
+            status_filter |= is_active
+        students = students.filter(status_filter)
     if payer is not None:
         students = students.filter(payer=payer)
     for term in query.split():
@@ -93,6 +121,28 @@ def student_list(
 
 def student_get(*, profession: Profession, student_id: int) -> Student:
     return get_object_or_404(student_list(profession=profession), pk=student_id)
+
+
+def student_status(*, student: Student, today: date) -> Student.Status:
+    """The status to show: « en pause » while a pause is ongoing, unless ended."""
+    if student.status == Student.Status.ENDED:
+        return Student.Status.ENDED
+    for pause in student.pauses.all():
+        if pause.covers_day(today):
+            return Student.Status.PAUSED
+    return Student.Status.ACTIVE
+
+
+def student_pause_list(*, student: Student) -> QuerySet[StudentPause]:
+    """Pauses of an owned student, most recent first."""
+    return StudentPause.objects.filter(student=student)
+
+
+def student_pause_get(*, profession: Profession, pause_id: int) -> StudentPause:
+    pauses = StudentPause.objects.filter(profession=profession).select_related(
+        "student"
+    )
+    return get_object_or_404(pauses, pk=pause_id)
 
 
 def plan_assignment_list(
@@ -175,16 +225,23 @@ def payer_current_plan(*, payer: Payer, month: date) -> Plan | None:
 class StudentListItem:
     student: Student
     current_plan: Plan | None
+    status: Student.Status
 
 
 def student_list_items(
-    *, students: Iterable[Student], month: date
+    *, students: Iterable[Student], today: date
 ) -> list[StudentListItem]:
-    """Rows of the student list, with the plan in force for `month`."""
+    """Rows of the student list: plan in force this month and status shown today."""
+    month = month_start(today)
     items: list[StudentListItem] = []
     for student in students:
-        current_plan = student_current_plan(student=student, month=month)
-        items.append(StudentListItem(student=student, current_plan=current_plan))
+        items.append(
+            StudentListItem(
+                student=student,
+                current_plan=student_current_plan(student=student, month=month),
+                status=student_status(student=student, today=today),
+            )
+        )
     return items
 
 

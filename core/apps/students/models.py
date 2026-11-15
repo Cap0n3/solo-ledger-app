@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -7,7 +8,7 @@ from django.db.models import F, Q
 from django.utils.translation import gettext_lazy as _
 
 from core.apps.accounts.models import ProfessionOwnedModel
-from core.utils.months import validate_month_start
+from core.utils.months import month_add, validate_month_start
 
 
 class Plan(ProfessionOwnedModel):
@@ -94,8 +95,8 @@ class Student(ProfessionOwnedModel):
     """A student (« élève ») of a profession.
 
     `end_date` is the billing boundary that counts: expected payments stop at
-    its month. `status` is informational; the effect of « en pause » on expected
-    payments is decided in the payments milestone.
+    its month. `status` is informational and only stores `active` or `ended`:
+    « en pause » is derived from an ongoing `StudentPause`, never saved.
     """
 
     class Status(models.TextChoices):
@@ -167,10 +168,93 @@ class Student(ProfessionOwnedModel):
                 _("Un élève terminé doit avoir une date de fin."),
                 code="ended_without_end_date",
             )
+        if self.status == self.Status.PAUSED:
+            errors["status"] = ValidationError(
+                _("Le statut « en pause » se déduit des pauses de l'élève."),
+                code="paused_is_derived",
+            )
         if self.payer is not None and self.payer.profession_id != self.profession_id:
             errors["payer"] = ValidationError(
                 _("Le payeur n'appartient pas à cette activité."),
                 code="payer_profession_mismatch",
+            )
+        if errors:
+            raise ValidationError(errors)
+
+
+class StudentPause(ProfessionOwnedModel):
+    """A period during which a student takes no lessons (« pause »).
+
+    No payment is expected for a month lying entirely within a pause; a month
+    only partly covered stays due in full, since nothing is prorated. `ends_on`
+    stays empty while the return date is unknown. Pauses of a student never
+    overlap; that rule needs the sibling pauses and lives in the services.
+    """
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="pauses",
+        verbose_name=_("élève"),
+    )
+    starts_on = models.DateField(_("début de la pause"))
+    ends_on = models.DateField(_("fin de la pause"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("pause")
+        verbose_name_plural = _("pauses")
+        ordering = ("-starts_on", "-pk")
+        constraints = (
+            models.CheckConstraint(
+                condition=Q(ends_on__isnull=True) | Q(ends_on__gte=F("starts_on")),
+                name="student_pause_ends_after_start",
+                violation_error_message=_(
+                    "La fin de la pause doit être postérieure ou égale à son début."
+                ),
+            ),
+        )
+
+    def __str__(self) -> str:
+        if self.ends_on is None:
+            return f"{self.starts_on:%d.%m.%Y} -"
+        return f"{self.starts_on:%d.%m.%Y} - {self.ends_on:%d.%m.%Y}"
+
+    @property
+    def is_open(self) -> bool:
+        return self.ends_on is None
+
+    def covers_day(self, day: date) -> bool:
+        if day < self.starts_on:
+            return False
+        return self.ends_on is None or day <= self.ends_on
+
+    def covers_whole_month(self, month: date) -> bool:
+        """Whether every day of `month` lies within the pause."""
+        if self.starts_on > month:
+            return False
+        if self.ends_on is None:
+            return True
+        last_day_of_month = month_add(month, 1) - timedelta(days=1)
+        return self.ends_on >= last_day_of_month
+
+    def clean(self) -> None:
+        errors: dict[str, ValidationError] = {}
+        if (
+            self.student_id is not None
+            and self.student.profession_id != self.profession_id
+        ):
+            errors["student"] = ValidationError(
+                _("L'élève n'appartient pas à cette activité."),
+                code="student_profession_mismatch",
+            )
+        if (
+            self.starts_on is not None
+            and self.ends_on is not None
+            and self.ends_on < self.starts_on
+        ):
+            errors["ends_on"] = ValidationError(
+                _("La fin de la pause doit être postérieure ou égale à son début."),
+                code="ends_before_start",
             )
         if errors:
             raise ValidationError(errors)

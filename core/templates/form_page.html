@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% comment %}
+  Generic page for a simple form. Expects `form`, `submit_label`, `cancel_url`
+  and optionally `intro` (a sentence explaining the consequence of the action).
+{% endcomment %}
+{% block content %}
+  <div class="card form-card">
+    <div class="card-body">
+      {% if intro %}<p class="text-secondary">{{ intro }}</p>{% endif %}
+      <form method="post">
+        {% csrf_token %}
+        {% include "includes/form.html" %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+          <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{% translate "Retour" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

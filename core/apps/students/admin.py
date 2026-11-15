@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Payer, Plan, PlanAssignment, Student
+from .models import Payer, Plan, PlanAssignment, Student, StudentPause
 
 
 @admin.register(Plan)
@@ -27,4 +27,10 @@ class StudentAdmin(admin.ModelAdmin[Student]):
 @admin.register(PlanAssignment)
 class PlanAssignmentAdmin(admin.ModelAdmin[PlanAssignment]):
     list_display = ("plan", "student", "payer", "starts_on", "ends_on")
+    list_filter = ("profession",)
+
+
+@admin.register(StudentPause)
+class StudentPauseAdmin(admin.ModelAdmin[StudentPause]):
+    list_display = ("student", "starts_on", "ends_on")
     list_filter = ("profession",)

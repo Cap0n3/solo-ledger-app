@@ -18,6 +18,21 @@ urlpatterns = [
         views.student_plan_remove_latest,
         name="student_plan_remove_latest",
     ),
+    path(
+        "<int:student_id>/pauses/new/",
+        views.student_pause_create,
+        name="student_pause_create",
+    ),
+    path(
+        "pauses/<int:pause_id>/edit/",
+        views.student_pause_update,
+        name="student_pause_update",
+    ),
+    path(
+        "pauses/<int:pause_id>/delete/",
+        views.student_pause_delete,
+        name="student_pause_delete",
+    ),
     path("payers/", views.payer_list, name="payer_list"),
     path("payers/new/", views.payer_create, name="payer_create"),
     path("payers/<int:payer_id>/", views.payer_detail, name="payer_detail"),

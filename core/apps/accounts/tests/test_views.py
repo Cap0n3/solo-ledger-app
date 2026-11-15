@@ -362,3 +362,33 @@ def test_lesson_year_update_returns_404_for_another_professions_year(client):
     response = client.get(reverse("accounts:lesson_year_update", args=[foreign.pk]))
 
     assert response.status_code == 404
+
+
+def test_payment_due_day_is_updated_from_the_settings_page(client):
+    profession = ProfessionFactory.create()
+    other = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    response = client.post(
+        reverse("accounts:payment_due_day_update"), {"payment_due_day": "15"}
+    )
+
+    assert response.status_code == 302
+    profession.refresh_from_db()
+    other.refresh_from_db()
+    assert profession.payment_due_day == 15
+    assert other.payment_due_day == 10
+
+
+def test_payment_due_day_beyond_28_is_refused(client):
+    profession = ProfessionFactory.create()
+    client.force_login(profession.user)
+
+    response = client.post(
+        reverse("accounts:payment_due_day_update"), {"payment_due_day": "31"}
+    )
+
+    assert response.status_code == 200
+    assert "payment_due_day" in response.context["payment_due_day_form"].errors
+    profession.refresh_from_db()
+    assert profession.payment_due_day == 10

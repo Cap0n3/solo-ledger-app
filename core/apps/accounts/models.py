@@ -4,6 +4,7 @@ from pathlib import Path
 
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils.translation import gettext_lazy as _
@@ -11,6 +12,9 @@ from django.utils.translation import gettext_lazy as _
 from core.utils.months import month_range, month_span, validate_month_start
 
 LESSON_YEAR_MAX_MONTHS = 12
+PAYMENT_DUE_DAY_DEFAULT = 10
+# Capped at 28 so the due day exists in every month, February included.
+PAYMENT_DUE_DAY_MAX = 28
 
 
 def user_avatar_upload_to(instance: models.Model, filename: str) -> str:
@@ -56,6 +60,12 @@ class Profession(models.Model):
         verbose_name=_("utilisateur"),
     )
     name = models.CharField(_("nom"), max_length=100)
+    payment_due_day = models.PositiveSmallIntegerField(
+        _("jour limite de paiement"),
+        default=PAYMENT_DUE_DAY_DEFAULT,
+        validators=[MinValueValidator(1), MaxValueValidator(PAYMENT_DUE_DAY_MAX)],
+        help_text=_("Un mois qui n'est pas entièrement payé ce jour-là est en retard."),
+    )
     created_at = models.DateTimeField(_("créée le"), auto_now_add=True)
 
     class Meta:
@@ -72,6 +82,10 @@ class Profession(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def payment_due_date(self, month: date) -> date:
+        """Last day on which `month` can be fully paid without being late."""
+        return month.replace(day=self.payment_due_day)
 
 
 class ProfessionOwnedModel(models.Model):

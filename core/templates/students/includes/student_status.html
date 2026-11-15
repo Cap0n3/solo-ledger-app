@@ -1,7 +1,11 @@
-{% if student.status == "active" %}
-  <span class="badge text-bg-success">{{ student.get_status_display }}</span>
-{% elif student.status == "paused" %}
-  <span class="badge text-bg-warning">{{ student.get_status_display }}</span>
+{% comment %}
+  Badge for the status shown to the user. Expects `status` (a `Student.Status`
+  from the `student_status` selector, so that « en pause » follows the pauses).
+{% endcomment %}
+{% if status == "active" %}
+  <span class="badge text-bg-success">{{ status.label }}</span>
+{% elif status == "paused" %}
+  <span class="badge text-bg-warning">{{ status.label }}</span>
 {% else %}
-  <span class="badge text-bg-secondary">{{ student.get_status_display }}</span>
+  <span class="badge text-bg-secondary">{{ status.label }}</span>
 {% endif %}

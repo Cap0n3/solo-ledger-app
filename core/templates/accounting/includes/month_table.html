@@ -1,0 +1,76 @@
+{% load i18n money %}
+
+{% comment %}
+  Table of expected months. Expects `lines` (list of MonthLine) and optionally
+  `is_readonly` (no action column, e.g. the payer's family plan shown as a
+  reminder on a student page).
+{% endcomment %}
+<div class="table-responsive">
+  <table class="table table-sm align-middle mb-0">
+    <thead class="table-light text-uppercase small">
+      <tr>
+        <th scope="col">{% translate "Mois" %}</th>
+        <th scope="col" class="text-end">{% translate "Attendu" %}</th>
+        <th scope="col">{% translate "Paiement attribué" %}</th>
+        <th scope="col">{% translate "Statut" %}</th>
+        {% if not is_readonly %}
+          <th scope="col" class="text-end">{% translate "Actions" %}</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+        <tr>
+          <td class="text-nowrap">{{ line.expected_payment.month|date:"F Y" }}</td>
+          <td class="text-end text-nowrap">
+            {{ line.expected_payment.amount|chf }}
+            {% if line.expected_payment.is_amount_manual %}
+              <span class="small text-secondary"
+                    title="{% translate 'Montant modifié à la main' %}">✎</span>
+            {% endif %}
+          </td>
+          <td>
+            {% for allocation in line.allocations %}
+              <div class="text-nowrap">
+                {% if is_readonly %}
+                  {{ allocation.payment.received_on|date:"d.m.Y" }}
+                {% else %}
+                  <a class="text-decoration-none"
+                     href="{% url 'accounting:payment_update' allocation.payment.pk %}">{{ allocation.payment.received_on|date:"d.m.Y" }}</a>
+                {% endif %}
+                · {{ allocation.amount|chf }}
+              </div>
+            {% empty %}
+              {% if line.expected_payment.is_cancelled and line.expected_payment.cancellation_reason %}
+                <span class="small text-secondary">{{ line.expected_payment.cancellation_reason }}</span>
+              {% else %}
+                —
+              {% endif %}
+            {% endfor %}
+          </td>
+          <td>{% include "accounting/includes/month_status.html" %}</td>
+          {% if not is_readonly %}
+            <td class="text-end text-nowrap">
+              {% if line.expected_payment.is_cancelled %}
+                <form class="d-inline"
+                      method="post"
+                      action="{% url 'accounting:expected_payment_restore' line.expected_payment.pk %}">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="btn btn-outline-secondary btn-sm">{% translate "Rétablir" %}</button>
+                </form>
+              {% else %}
+                <a class="btn btn-outline-secondary btn-sm"
+                   href="{% url 'accounting:expected_payment_amount_update' line.expected_payment.pk %}">{% translate "Montant" %}</a>
+                {% if not line.allocations %}
+                  <a class="btn btn-outline-secondary btn-sm"
+                     href="{% url 'accounting:expected_payment_cancel' line.expected_payment.pk %}">{% translate "Annuler" %}</a>
+                {% endif %}
+              {% endif %}
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

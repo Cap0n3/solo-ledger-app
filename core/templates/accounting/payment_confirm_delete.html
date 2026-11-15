@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% load i18n money %}
+
+{% block content %}
+  <div class="card form-card">
+    <div class="card-body">
+      <p class="mb-2">
+        {% blocktranslate trimmed with amount=payment.amount|chf day=payment.received_on|date:"d.m.Y" %}
+          Le paiement de {{ amount }} reçu le {{ day }} sera supprimé de la comptabilité.
+        {% endblocktranslate %}
+      </p>
+      {% if payment.allocations.all %}
+        <p class="mb-2">{% translate "Les mois suivants ne seront plus réglés par ce paiement :" %}</p>
+        <ul>
+          {% for allocation in payment.allocations.all %}
+            <li>
+              {{ allocation.expected_payment.month|date:"F Y" }}
+              <span class="text-secondary">({{ allocation.amount|chf }})</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-danger">{% translate "Supprimer le paiement" %}</button>
+          <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{% translate "Retour" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

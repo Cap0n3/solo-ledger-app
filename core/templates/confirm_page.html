@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% comment %}
+  Generic confirmation page for a deletion. Expects `message`, `submit_label`
+  and `cancel_url`; the form posts to the current URL.
+{% endcomment %}
+{% block content %}
+  <div class="card form-card">
+    <div class="card-body">
+      <p>{{ message }}</p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-danger">{{ submit_label }}</button>
+          <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{% translate "Retour" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

@@ -12,9 +12,16 @@ from core.apps.students.selectors import (
     student_current_plan,
     student_list,
     student_list_items,
+    student_status,
 )
 
-from .factories import PayerFactory, PlanAssignmentFactory, PlanFactory, StudentFactory
+from .factories import (
+    PayerFactory,
+    PlanAssignmentFactory,
+    PlanFactory,
+    StudentFactory,
+    StudentPauseFactory,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -51,18 +58,36 @@ def test_student_list_filters_by_statuses_and_payer():
     profession = ProfessionFactory.create()
     payer = PayerFactory.create(profession=profession)
     active = StudentFactory.create(profession=profession, payer=payer)
-    paused = StudentFactory.create(profession=profession, status=Student.Status.PAUSED)
+    paused = StudentFactory.create(profession=profession)
+    StudentPauseFactory.create(
+        profession=profession,
+        student=paused,
+        starts_on=datetime.date(2026, 10, 1),
+        ends_on=None,
+    )
     StudentFactory.create(
         profession=profession,
         status=Student.Status.ENDED,
         end_date=datetime.date(2026, 12, 31),
     )
 
+    today = datetime.date(2026, 11, 13)
     current = student_list(
         profession=profession,
         statuses=(Student.Status.ACTIVE, Student.Status.PAUSED),
+        today=today,
     )
     assert set(current) == {active, paused}
+    only_paused = student_list(
+        profession=profession, statuses=(Student.Status.PAUSED,), today=today
+    )
+    assert list(only_paused) == [paused]
+    before_the_pause = student_list(
+        profession=profession,
+        statuses=(Student.Status.PAUSED,),
+        today=datetime.date(2026, 9, 30),
+    )
+    assert list(before_the_pause) == []
     assert list(student_list(profession=profession, payer=payer)) == [active]
 
 
@@ -145,9 +170,24 @@ def test_student_list_items_carry_the_plan_in_force():
     without_plan = StudentFactory.create(profession=with_plan.profession)
 
     items = student_list_items(
-        students=student_list(profession=with_plan.profession), month=OCTOBER
+        students=student_list(profession=with_plan.profession), today=OCTOBER
     )
 
     by_student = {item.student: item.current_plan for item in items}
     assert by_student[with_plan] == assignment.plan
     assert by_student[without_plan] is None
+
+
+def test_student_status_is_paused_only_while_a_pause_is_ongoing():
+    pause = StudentPauseFactory.create(
+        starts_on=datetime.date(2027, 1, 15), ends_on=datetime.date(2027, 3, 10)
+    )
+    student = pause.student
+
+    before = student_status(student=student, today=datetime.date(2027, 1, 14))
+    during = student_status(student=student, today=datetime.date(2027, 3, 10))
+    after = student_status(student=student, today=datetime.date(2027, 3, 11))
+
+    assert before == Student.Status.ACTIVE
+    assert during == Student.Status.PAUSED
+    assert after == Student.Status.ACTIVE

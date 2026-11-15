@@ -17,7 +17,13 @@ from core.apps.accounts.services import lesson_year_create
 
 from .models import Payer, Plan, Student
 from .selectors import plan_list
-from .services import payer_create, plan_assign, plan_create, student_create
+from .services import (
+    payer_create,
+    plan_assign,
+    plan_create,
+    student_create,
+    student_pause_create,
+)
 
 TEST_PREFIX = "[TEST] "
 FAMILY_PLAN_STARTS_ON = datetime.date(2026, 9, 1)
@@ -50,6 +56,8 @@ class SeedStudent:
     status: Student.Status = Student.Status.ACTIVE
     end_date: datetime.date | None = None
     payer_name: str | None = None
+    # An open pause from that day: the student then shows as « en pause ».
+    pause_starts_on: datetime.date | None = None
 
 
 @dataclass(frozen=True)
@@ -101,7 +109,7 @@ GUITAR_CATALOG = SeedCatalog(
             "Moret",
             datetime.date(2026, 10, 1),
             "Formule bimensuelle",
-            status=Student.Status.PAUSED,
+            pause_starts_on=datetime.date(2026, 11, 1),
         ),
         SeedStudent(
             "Gaëlle",
@@ -184,7 +192,7 @@ SINGING_CATALOG = SeedCatalog(
             "Berger",
             datetime.date(2026, 10, 1),
             "Formule bimensuelle",
-            status=Student.Status.PAUSED,
+            pause_starts_on=datetime.date(2026, 11, 1),
         ),
         SeedStudent(
             "Rania",
@@ -268,7 +276,7 @@ def seed_profession_students(
             payers[seed_student.payer_name] if seed_student.payer_name else None
         )
         email_slug = _ascii_slug(f"{seed_student.first_name}.{seed_student.last_name}")
-        student_create(
+        student = student_create(
             profession=profession,
             first_name=TEST_PREFIX + seed_student.first_name,
             last_name=seed_student.last_name,
@@ -282,6 +290,10 @@ def seed_profession_students(
             payer=student_payer,
             plan=plan,
         )
+        if seed_student.pause_starts_on is not None:
+            student_pause_create(
+                student=student, starts_on=seed_student.pause_starts_on, ends_on=None
+            )
     stdout.write(
         f"Seeded '{profession.name}': {len(catalog.plans)} plans, "
         f"{len(LESSON_YEARS)} lesson years, {len(catalog.payers)} payers, "
